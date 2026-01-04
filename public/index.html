@@ -209,46 +209,6 @@
 
 <script>
 
-  // ===== PROSTY PAYWALL =====
-const allowedKeys = [
-  "ABC123",
-  "KLIENT001",
-  "TESTVIP"
-];
-
-const urlKey = new URLSearchParams(window.location.search).get("key");
-
-if (!allowedKeys.includes(urlKey)) {
-  document.body.innerHTML = `
-    <div style="
-      font-family: Arial;
-      padding: 60px;
-      max-width: 600px;
-      margin: auto;
-      text-align: center;
-    ">
-      <h2>Dostęp płatny</h2>
-      <p>
-        To narzędzie jest dostępne po zakupie.
-      </p>
-      <a
-        href="https://gumroad.com/l/TWOJ_PRODUKT"
-        style="
-          display: inline-block;
-          margin-top: 20px;
-          padding: 12px 20px;
-          background: #2563eb;
-          color: white;
-          text-decoration: none;
-          border-radius: 6px;
-        "
-      >
-        Kup dostęp
-      </a>
-    </div>
-  `;
-  throw new Error("Brak dostępu");
-}
 
   /* ===== THEME ===== */
   const savedTheme = localStorage.getItem("theme") || "light";

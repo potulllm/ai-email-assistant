@@ -1,5 +1,7 @@
 import express from "express";
 import fetch from "node-fetch";
+import crypto from "crypto";
+
 
 const app = express();
 app.use(express.json());
@@ -31,8 +33,25 @@ const stylePrompts = {
 `
 };
 
+// ===== KLUCZE DOSTĘPU =====
+const accessKeys = new Set();
+
+// generator profesjonalnego klucza
+function generateAccessKey() {
+  return crypto.randomBytes(16).toString("hex");
+}
+
+function checkAccess(req, res, next) {
+  const key = req.query.key;
+  if (!key || !accessKeys.has(key)) {
+    return res.status(403).json({ error: "Brak dostępu" });
+  }
+  next();
+}
+
+
 /* ===== ENDPOINT ===== */
-app.post("/analyze", async (req, res) => {
+app.post("/analyze", checkAccess, async (req, res) => {
   try {
     const emailText = req.body.text || "";
     const responseType = req.body.responseType || "default";
@@ -142,6 +161,16 @@ ${emailText}
     res.json({ result: "Błąd serwera." });
   }
 });
+
+app.post("/generate-key", (req, res) => {
+  const newKey = generateAccessKey();
+  accessKeys.add(newKey);
+
+  res.json({
+    key: newKey
+  });
+});
+
 
 app.listen(3000, () => {
   console.log("Serwer działa na http://localhost:3000");

@@ -292,7 +292,9 @@ if (!allowedKeys.includes(urlKey)) {
   async function analyze() {
     result.innerText = "Analiza...";
 
-    const res = await fetch("/analyze", {
+    const key = new URLSearchParams(window.location.search).get("key");
+
+    const res = await fetch(`/analyze?key=${key}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

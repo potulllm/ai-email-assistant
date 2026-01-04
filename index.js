@@ -179,6 +179,22 @@ app.post("/generate-key", (req, res) => {
   });
 });
 
+app.get("/generate-key", (req, res) => {
+  const admin = req.query.admin;
+
+  if (admin !== ADMIN_SECRET) {
+    return res.status(403).json({ error: "Brak dostępu admina" });
+  }
+
+  const newKey = generateAccessKey();
+  accessKeys.add(newKey);
+
+  res.json({
+    key: newKey
+  });
+});
+
+
 
 app.listen(3000, () => {
   console.log("Serwer działa na http://localhost:3000");

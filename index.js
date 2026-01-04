@@ -2,6 +2,8 @@ import express from "express";
 import fetch from "node-fetch";
 import crypto from "crypto";
 
+const ADMIN_SECRET = process.env.ADMIN_SECRET || "zmien_to_haslo";
+
 
 const app = express();
 app.use(express.json());
@@ -163,6 +165,12 @@ ${emailText}
 });
 
 app.post("/generate-key", (req, res) => {
+  const admin = req.query.admin;
+
+  if (admin !== ADMIN_SECRET) {
+    return res.status(403).json({ error: "Brak dostępu admina" });
+  }
+
   const newKey = generateAccessKey();
   accessKeys.add(newKey);
 

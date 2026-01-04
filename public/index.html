@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>AI Email Assistant</title>
+
+  <style>
+    /* ===== RESET / ZMIENNE ===== */
+    :root {
+      --bg-main: #f6f7f9;
+      --bg-panel: #f4f4f4;
+      --bg-card: #fbfbfc;
+      --bg-box: #f1f3f5;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+    }
+
+    body.dark {
+      --bg-main: #0f172a;
+      --bg-panel: #020617;
+      --bg-card: #020617;
+      --bg-box: #020617;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      background: var(--bg-main);
+      color: var(--text-main);
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* ===== LEWY PANEL ===== */
+    .sidebar {
+      width: 320px;
+      background: var(--bg-panel);
+      padding: 15px;
+      overflow-y: auto;
+      border-right: 1px solid rgba(0,0,0,0.08);
+    }
+
+    .sidebar h3 {
+      margin-top: 0;
+    }
+
+    .top-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .history-item {
+      background: var(--bg-card);
+      padding: 10px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      border-radius: 6px;
+      font-size: 14px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+
+    .history-item:hover {
+      opacity: 0.9;
+    }
+
+    .history-title {
+      font-weight: bold;
+      display: block;
+    }
+
+    .history-tags {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* ===== PRIORYTETY (STONOWANE) ===== */
+    .priority-wysoki {
+      border-left: 5px solid #d97706;
+      background: #fffaf3;
+    }
+
+    .priority-normalny {
+      border-left: 5px solid #2563eb;
+      background: #f5f9ff;
+    }
+
+    .priority-niski {
+      border-left: 5px solid #059669;
+      background: #f3fbf8;
+    }
+
+    body.dark .priority-wysoki,
+    body.dark .priority-normalny,
+    body.dark .priority-niski {
+      background: var(--bg-card);
+    }
+
+    /* ===== PRAWA STRONA ===== */
+    .main {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 16px;
+      padding: 10px;
+      background: var(--bg-box);
+      color: var(--text-main);
+      border: 1px solid rgba(0,0,0,0.15);
+      border-radius: 4px;
+    }
+
+    select {
+      margin-top: 6px;
+      padding: 6px;
+      font-size: 15px;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    button {
+      padding: 8px 14px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    pre {
+      margin-top: 15px;
+      background: var(--bg-box);
+      padding: 15px;
+      font-size: 15px;
+      white-space: pre-wrap;
+      border-radius: 6px;
+    }
+
+    label {
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <!-- ===== HISTORIA ===== -->
+  <div class="sidebar">
+    <div class="top-actions">
+      <h3>Historia</h3>
+      <button onclick="toggleTheme()">🌙 / ☀️</button>
+    </div>
+    <div id="history"></div>
+  </div>
+
+  <!-- ===== GŁÓWNY PANEL ===== -->
+  <div class="main">
+    <h2>AI Email Assistant</h2>
+
+    <textarea id="email" placeholder="Wklej maila tutaj..." rows="7"></textarea>
+
+    <br><br>
+
+    <label>Typ odpowiedzi</label>
+    <select id="responseType">
+      <option value="default">Standardowa</option>
+      <option value="contact">Kontakt</option>
+      <option value="clarify">Doprecyzowanie</option>
+      <option value="pricing">Orientacyjna wycena</option>
+      <option value="decline">Odmowa</option>
+    </select>
+
+    <br><br>
+
+    <label>Styl odpowiedzi</label>
+    <select id="responseStyle">
+      <option value="professional">Profesjonalny</option>
+      <option value="friendly">Przyjazny</option>
+      <option value="concise">Krótki</option>
+      <option value="partner">Partnerski</option>
+      <option value="corporate">Korporacyjny</option>
+    </select>
+
+    <div id="pricingBox" style="display:none; margin-top:10px;">
+      <label>Ceny / widełki</label>
+      <textarea id="pricingText" rows="3"></textarea>
+    </div>
+
+    <br>
+
+    <button onclick="analyze()">Analizuj</button>
+    <button onclick="copyResult()">Kopiuj odpowiedź</button>
+
+    <pre id="result"></pre>
+  </div>
+
+</div>
+
+<script>
+  /* ===== THEME ===== */
+  const savedTheme = localStorage.getItem("theme") || "light";
+  document.body.classList.toggle("dark", savedTheme === "dark");
+
+  function toggleTheme() {
+    const isDark = document.body.classList.toggle("dark");
+    localStorage.setItem("theme", isDark ? "dark" : "light");
+  }
+
+  /* ===== HISTORIA ===== */
+  const history = JSON.parse(localStorage.getItem("history")) || [];
+  const historyDiv = document.getElementById("history");
+
+  function saveHistory() {
+    localStorage.setItem("history", JSON.stringify(history));
+  }
+
+  function extract(text, label) {
+    const match = text.match(new RegExp(label + ":[\\s\\S]*?\\n([^\\n]*)"));
+    return match ? match[1].trim() : "";
+  }
+
+  function extractPriority(text) {
+    return extract(text, "⚠️ PRIORYTET") || "normalny";
+  }
+
+  function extractTitle(text) {
+    return extract(text, "🧠 TYTUŁ SPRAWY") || "Nowa sprawa";
+  }
+
+  function extractTags(text) {
+    return extract(text, "🏷️ TAGI");
+  }
+
+  document.getElementById("responseType").addEventListener("change", () => {
+    pricingBox.style.display =
+      responseType.value === "pricing" ? "block" : "none";
+  });
+
+  async function analyze() {
+    result.innerText = "Analiza...";
+
+    const res = await fetch("/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        text: email.value,
+        responseType: responseType.value,
+        responseStyle: responseStyle.value,
+        pricingText: pricingText.value
+      })
+    });
+
+    const data = await res.json();
+    result.innerText = data.result;
+
+    history.unshift({
+      text: data.result,
+      priority: extractPriority(data.result),
+      title: extractTitle(data.result),
+      tags: extractTags(data.result),
+      timestamp: Date.now()
+    });
+
+    saveHistory();
+    renderHistory();
+  }
+
+  function formatTime(ts) {
+    const d = new Date(ts);
+    return d.toLocaleString("pl-PL", {
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "2-digit",
+      month: "2-digit"
+    });
+  }
+
+  function renderHistory() {
+    historyDiv.innerHTML = "";
+
+    const order = { wysoki: 1, normalny: 2, niski: 3 };
+
+    [...history]
+      .sort((a, b) => order[a.priority] - order[b.priority])
+      .forEach(item => {
+        const div = document.createElement("div");
+        div.className = `history-item priority-${item.priority}`;
+        div.innerHTML = `
+          <span class="history-title">${item.title}</span>
+          <span class="history-tags">${item.tags}</span>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+            🕒 ${formatTime(item.timestamp)}
+          </div>
+        `;
+        div.onclick = () => (result.innerText = item.text);
+        historyDiv.appendChild(div);
+      });
+  }
+
+  function copyResult() {
+    const marker = "✉️ GOTOWA ODPOWIEDŹ DO KLIENTA:";
+    const text = result.innerText;
+    const idx = text.indexOf(marker);
+    if (idx !== -1) {
+      navigator.clipboard.writeText(text.slice(idx + marker.length).trim());
+    }
+  }
+
+  renderHistory();
+</script>
+
+</body>
+</html>

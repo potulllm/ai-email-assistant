@@ -6,91 +6,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
-    :root {
-      --bg-main: #f6f7f9;
-      --bg-panel: #f1f3f5;
-      --bg-box: #ffffff;
-      --text-main: #1f2937;
-      --border: #d1d5db;
-    }
-
-    body.dark {
-      --bg-main: #0f172a;
-      --bg-panel: #020617;
-      --bg-box: #020617;
-      --text-main: #e5e7eb;
-      --border: #1f2937;
-    }
-
     body {
-      margin: 0;
       font-family: Arial, sans-serif;
-      background: var(--bg-main);
-      color: var(--text-main);
-    }
-
-    .app {
-      display: flex;
-      height: 100vh;
-    }
-
-    .sidebar {
-      width: 280px;
-      background: var(--bg-panel);
-      padding: 15px;
-      border-right: 1px solid var(--border);
-      overflow-y: auto;
-    }
-
-    .sidebar h3 {
-      margin-top: 0;
-    }
-
-    .history-item {
-      background: var(--bg-box);
-      padding: 8px;
-      margin-bottom: 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      border-left: 4px solid #2563eb;
-      font-size: 14px;
-    }
-
-    .main {
-      flex: 1;
+      background: #f6f7f9;
+      color: #1f2937;
+      margin: 0;
       padding: 30px;
-      overflow-y: auto;
     }
 
     textarea {
       width: 100%;
+      height: 160px;
       padding: 10px;
       font-size: 15px;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      background: var(--bg-box);
-      color: var(--text-main);
     }
 
-    select, button {
-      margin-top: 8px;
-      padding: 6px;
+    button {
+      margin-top: 10px;
+      padding: 8px 14px;
       font-size: 14px;
     }
 
     #result {
-      margin-top: 16px;
+      margin-top: 20px;
       padding: 12px;
-      border-radius: 4px;
-      background: var(--bg-box);
-      border: 1px solid var(--border);
+      background: #ffffff;
+      border: 1px solid #ccc;
       white-space: pre-wrap;
-    }
-
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
     }
 
     a {
@@ -102,149 +44,63 @@
 
 <body>
 
-<div class="app">
+  <h2>AI Email Assistant</h2>
 
-  <div class="sidebar">
-    <div class="top-bar">
-      <h3>Historia</h3>
-      <button onclick="toggleTheme()">Tryb</button>
-    </div>
+  <textarea id="emailInput" placeholder="Wklej treść maila klienta"></textarea>
+  <br>
 
-    <button onclick="clearHistory()">Wyczyść historię</button>
-    <div id="history"></div>
-  </div>
+  <button onclick="analyze()">Analizuj</button>
 
-  <div class="main">
-    <h2>AI Email Assistant</h2>
+  <div id="result"></div>
 
-    <textarea id="emailInput" rows="7"></textarea>
+  <script>
+    console.log("JS DZIALA");
 
+    function analyze() {
+      var email = document.getElementById("emailInput").value;
 
-    <br><br>
+      if (email.trim().length === 0) {
+        document.getElementById("result").innerText = "Brak tresci maila.";
+        return;
+      }
 
-    <label>Typ odpowiedzi</label><br>
-    <select id="responseType">
-      <option value="default">Standardowa</option>
-      <option value="contact">Kontakt</option>
-      <option value="clarify">Doprecyzowanie</option>
-      <option value="pricing">Orientacyjna wycena</option>
-      <option value="decline">Odmowa</option>
-    </select>
+      var params = new URLSearchParams(window.location.search);
+      var accessKey = params.get("key");
 
-    <br><br>
+      if (!accessKey) {
+        document.getElementById("result").innerHTML =
+          "<strong>Dostep platny</strong><br><br>" +
+          "Aby korzystac z aplikacji, wymagany jest zakup dostepu.<br><br>" +
+          "<a href='https://potulllm.gumroad.com/l/AIEmailAssistant' target='_blank'>" +
+          "Kup dostep</a>";
+        return;
+      }
 
-    <label>Styl odpowiedzi</label><br>
-    <select id="responseStyle">
-      <option value="professional">Profesjonalny</option>
-      <option value="friendly">Przyjazny</option>
-      <option value="concise">Krótki</option>
-      <option value="partner">Partnerski</option>
-      <option value="corporate">Korporacyjny</option>
-    </select>
+      document.getElementById("result").innerText = "Analiza...";
 
-    <br><br>
-
-    <button onclick="analyze()">Analizuj</button>
-    <button onclick="copyResult()">Kopiuj odpowiedź</button>
-
-    <div id="result"></div>
-  </div>
-
-</div>
-
-<script>
-  console.log("WERSJA 2026-01-05");
-
-
-  const resultBox = document.getElementById("result");
-  const historyDiv = document.getElementById("history");
-  const history = JSON.parse(localStorage.getItem("history") || "[]");
-
-  function toggleTheme() {
-    const dark = document.body.classList.toggle("dark");
-    localStorage.setItem("theme", dark ? "dark" : "light");
-  }
-
-  if (localStorage.getItem("theme") === "dark") {
-    document.body.classList.add("dark");
-  }
-
-  function renderHistory() {
-    historyDiv.innerHTML = "";
-    history.forEach(item => {
-      const div = document.createElement("div");
-      div.className = "history-item";
-      div.textContent = item.title;
-      div.onclick = () => resultBox.textContent = item.text;
-      historyDiv.appendChild(div);
-    });
-  }
-
-  function clearHistory() {
-    if (!confirm("Wyczyścić historię?")) return;
-    history.length = 0;
-    localStorage.removeItem("history");
-    renderHistory();
-  }
-
-  async function analyze() {
-  const email = document.getElementById("emailInput").value;
-
-  if (email.trim().length === 0) {
-    resultBox.textContent = "Brak treści maila.";
-    return;
-  }
-
-  const accessKey = new URLSearchParams(window.location.search).get("key");
-
-  if (!accessKey) {
-    resultBox.innerHTML =
-      "<strong>Dostęp płatny</strong><br><br>" +
-      "Aby korzystać z aplikacji, wymagany jest zakup dostępu.<br><br>" +
-      "<a href='https://potulllm.gumroad.com/l/AIEmailAssistant' target='_blank'>Kup dostęp</a>";
-    return;
-  }
-
-  resultBox.textContent = "Analiza...";
-
-  const response = await fetch("/analyze?key=" + accessKey, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      email: email,
-      responseType: responseType.value,
-      responseStyle: responseStyle.value
-    })
-  });
-
-  if (!response.ok) {
-    resultBox.textContent = "Błąd serwera.";
-    return;
-  }
-
-  const data = await response.json();
-  resultBox.textContent = data.result || "Brak odpowiedzi.";
-
-      history.unshift({
-        title: "Mail klienta",
-        text: resultBox.textContent
+      fetch("/analyze?key=" + accessKey, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ email: email })
+      })
+      .then(function(response) {
+        if (!response.ok) {
+          throw new Error("Blad serwera");
+        }
+        return response.json();
+      })
+      .then(function(data) {
+        document.getElementById("result").innerText =
+          data.result || "Brak odpowiedzi AI.";
+      })
+      .catch(function() {
+        document.getElementById("result").innerText =
+          "Blad polaczenia z serwerem.";
       });
-
-      localStorage.setItem("history", JSON.stringify(history));
-      renderHistory();
-
-    } catch (e) {
-      resultBox.textContent = "Błąd połączenia.";
     }
-  }
-
-  function copyResult() {
-    navigator.clipboard.writeText(resultBox.textContent);
-  }
-
-  renderHistory();
-  console.log("JS END");
-</script>
+  </script>
 
 </body>
 </html>

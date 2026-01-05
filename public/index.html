@@ -217,6 +217,19 @@
   const savedTheme = localStorage.getItem("theme") || "light";
   document.body.classList.toggle("dark", savedTheme === "dark");
 
+  async function analyze() {
+    result.innerText = "Analiza...";
+
+    const key = new URLSearchParams(window.location.search).get("key");
+
+const response = await fetch("/analyze", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ email })
+});
+
   function toggleTheme() {
     const isDark = document.body.classList.toggle("dark");
     localStorage.setItem("theme", isDark ? "dark" : "light");
@@ -252,18 +265,7 @@
       responseType.value === "pricing" ? "block" : "none";
   });
 
-  async function analyze() {
-    result.innerText = "Analiza...";
-
-    const key = new URLSearchParams(window.location.search).get("key");
-
-const response = await fetch("/analyze", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({ email })
-});
+ 
 
 if (!response.ok) {
   document.getElementById("result").innerHTML = `
@@ -278,7 +280,7 @@ if (!response.ok) {
   return;
 }
 
-const data = await response.json();
+const historydata = await response.json();
 
 
     const data = await res.json();
@@ -338,6 +340,8 @@ const data = await response.json();
   }
 
   renderHistory();
+console.log("JS ZAŁADOWANY");
+
 </script>
 
 </body>

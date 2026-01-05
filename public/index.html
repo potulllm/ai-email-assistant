@@ -6,42 +6,72 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
+/* ================= THEME ================= */
 :root {
-  --bg-main:#f5f7fa;--bg-panel:#eef1f5;--bg-card:#fff;--bg-input:#fff;
+  --bg-main:#f5f7fa;--bg-panel:#eef1f5;--bg-card:#ffffff;--bg-input:#ffffff;
   --text-main:#1f2937;--text-muted:#6b7280;--border:#d1d5db;--accent:#2563eb;
 }
 body.dark {
   --bg-main:#0f172a;--bg-panel:#020617;--bg-card:#020617;--bg-input:#020617;
   --text-main:#e5e7eb;--text-muted:#9ca3af;--border:#1f2937;--accent:#60a5fa;
 }
-body{margin:0;font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg-main);color:var(--text-main)}
+body{
+  margin:0;font-family:"Segoe UI",system-ui,sans-serif;
+  background:var(--bg-main);color:var(--text-main)
+}
 .app{display:flex;height:100vh}
 
-/* SIDEBAR */
-.sidebar{width:340px;background:var(--bg-panel);padding:14px;border-right:1px solid var(--border);overflow-y:auto}
-.sidebar-header{display:flex;justify-content:space-between;align-items:center}
-.sidebar select{width:100%;margin:6px 0;padding:6px}
-.history-item{background:var(--bg-card);padding:10px;border-radius:8px;margin-bottom:10px;
-  cursor:pointer;border-left:4px solid var(--accent)}
+/* ================= SIDEBAR ================= */
+.sidebar{
+  width:340px;background:var(--bg-panel);padding:14px;
+  border-right:1px solid var(--border);overflow-y:auto
+}
+.sidebar-header{
+  display:flex;justify-content:space-between;align-items:center
+}
+.history-item{
+  background:var(--bg-card);padding:10px;border-radius:8px;margin-bottom:10px;
+  cursor:pointer;border-left:4px solid var(--accent)
+}
 .history-item.wysoki{border-color:#dc2626}
 .history-item.normalny{border-color:#2563eb}
 .history-item.niski{border-color:#16a34a}
 .history-title{font-weight:600;font-size:14px}
-.history-meta{font-size:12px;color:var(--text-muted);margin-top:2px}
+.history-meta{font-size:12px;color:var(--text-muted)}
 
-/* MAIN */
-.main{flex:1;padding:30px;overflow-y:auto}
-textarea,select{width:100%;padding:10px;margin-bottom:12px;font-size:15px;
-  border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-main)}
-button{padding:8px 14px;border-radius:6px;border:1px solid var(--border);
-  background:var(--bg-card);cursor:pointer;margin-right:6px}
-button.primary{background:var(--accent);color:#fff;border:none}
+/* ================= MAIN ================= */
+.main{flex:1;padding:32px;overflow-y:auto}
+textarea,select{
+  width:100%;padding:12px;margin-bottom:12px;font-size:15px;
+  border-radius:6px;border:1px solid var(--border);
+  background:var(--bg-input);color:var(--text-main)
+}
+button{
+  padding:10px 16px;border-radius:6px;border:1px solid var(--border);
+  background:var(--bg-card);cursor:pointer;font-size:14px
+}
+button.primary{
+  background:var(--accent);color:#fff;border:none
+}
+button.copy-success{
+  background:#16a34a;color:#fff;border:none
+}
 
-/* RESULT */
-.card{background:var(--bg-card);border-radius:10px;padding:18px;margin-top:18px;
-  border:1px solid var(--border)}
-.mail-header{font-size:13px;color:var(--text-muted);margin-bottom:10px}
-.mail-body{white-space:pre-wrap;line-height:1.6;font-size:15px}
+/* ================= RESULT (MAIL) ================= */
+.mail-card{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:10px;padding:24px;margin-top:20px;
+  max-width:800px
+}
+.mail-subject{
+  font-size:16px;font-weight:600;margin-bottom:14px
+}
+.mail-body{
+  font-size:16px;line-height:1.7;white-space:pre-wrap
+}
+.mail-label{
+  font-size:13px;color:var(--text-muted);margin-bottom:4px
+}
 </style>
 </head>
 
@@ -55,20 +85,6 @@ button.primary{background:var(--accent);color:#fff;border:none}
     <h3>Historia</h3>
     <button onclick="toggleTheme()">🌗</button>
   </div>
-
-  <select id="sortMode">
-    <option value="newest">Najnowsze</option>
-    <option value="oldest">Najstarsze</option>
-    <option value="priority">Priorytet</option>
-  </select>
-
-  <select id="filterPriority">
-    <option value="all">Wszystkie</option>
-    <option value="wysoki">Wysoki</option>
-    <option value="normalny">Normalny</option>
-    <option value="niski">Niski</option>
-  </select>
-
   <div id="history"></div>
 </div>
 
@@ -79,7 +95,7 @@ button.primary{background:var(--accent);color:#fff;border:none}
   <textarea id="emailInput" rows="6" placeholder="Wklej maila od klienta..."></textarea>
 
   <select id="responseType">
-    <option value="default">Standardowa odpowiedź</option>
+    <option value="default">Standardowa</option>
     <option value="clarify">Doprecyzowanie</option>
     <option value="pricing">Wycena</option>
     <option value="decline">Odmowa</option>
@@ -93,11 +109,11 @@ button.primary{background:var(--accent);color:#fff;border:none}
     <option value="corporate">Korporacyjny</option>
   </select>
 
-  <textarea id="pricingText" rows="3" placeholder="Ceny / widełki (tylko dla wyceny)"
+  <textarea id="pricingText" rows="3" placeholder="Ceny / widełki"
     style="display:none"></textarea>
 
   <button class="primary" onclick="analyze()">Analizuj</button>
-  <button onclick="copyMail()">Kopiuj maila</button>
+  <button id="copyBtn" onclick="copyMail()">Kopiuj odpowiedź</button>
 
   <div id="result"></div>
 </div>
@@ -117,7 +133,7 @@ responseType.onchange=()=>pricingText.style.display=
   responseType.value==="pricing"?"block":"none";
 
 /* HISTORY */
-let history=JSON.parse(localStorage.getItem("history")||"[]");
+const history=JSON.parse(localStorage.getItem("history")||"[]");
 const historyDiv=document.getElementById("history");
 const resultDiv=document.getElementById("result");
 
@@ -126,53 +142,33 @@ function extract(label,text){
   return m?m[1].trim():"";
 }
 
-function formatTime(ts){
-  const d=new Date(ts);
-  return d.toLocaleDateString("pl-PL",{day:"2-digit",month:"2-digit"})+
-    " • "+d.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
-}
-
 function renderHistory(){
   historyDiv.innerHTML="";
-  let items=[...history];
-
-  const filter=filterPriority.value;
-  if(filter!=="all")items=items.filter(i=>i.priority===filter);
-
-  if(sortMode.value==="newest")items.sort((a,b)=>b.time-a.time);
-  if(sortMode.value==="oldest")items.sort((a,b)=>a.time-b.time);
-  if(sortMode.value==="priority"){
-    const o={wysoki:1,normalny:2,niski:3};
-    items.sort((a,b)=>o[a.priority]-o[b.priority]);
-  }
-
-  items.forEach(item=>{
+  history.forEach(item=>{
     const div=document.createElement("div");
     div.className="history-item "+item.priority;
     div.innerHTML=`
       <div class="history-title">${item.title}</div>
-      <div class="history-meta">${formatTime(item.time)} • ${item.priority}</div>
+      <div class="history-meta">${item.time}</div>
     `;
     div.onclick=()=>renderResult(item.text);
     historyDiv.appendChild(div);
   });
 }
 
-sortMode.onchange=filterPriority.onchange=renderHistory;
-
 /* ANALYZE */
 async function analyze(){
   const email=emailInput.value;
   if(!email){
-    resultDiv.innerHTML="<div class='card'>Brak treści maila.</div>";
+    resultDiv.innerHTML="<div class='mail-card'>Brak treści maila.</div>";
     return;
   }
   const key=new URLSearchParams(window.location.search).get("key");
   if(!key){
-    resultDiv.innerHTML="<div class='card'>Dostęp płatny.<br><a href='https://potulllm.gumroad.com/l/AIEmailAssistant'>Kup dostęp</a></div>";
+    resultDiv.innerHTML="<div class='mail-card'>Dostęp płatny.</div>";
     return;
   }
-  resultDiv.innerHTML="<div class='card'>Analiza...</div>";
+  resultDiv.innerHTML="<div class='mail-card'>Analiza...</div>";
 
   const res=await fetch("/analyze?key="+key,{
     method:"POST",
@@ -191,9 +187,8 @@ async function analyze(){
     text:data.result,
     title:extract("🧠 TYTUŁ SPRAWY",data.result)||"Mail",
     priority:extract("⚠️ PRIORYTET",data.result)||"normalny",
-    time:Date.now()
+    time:new Date().toLocaleString("pl-PL",{hour:"2-digit",minute:"2-digit",day:"2-digit",month:"2-digit"})
   });
-
   localStorage.setItem("history",JSON.stringify(history));
   renderHistory();
 }
@@ -201,18 +196,26 @@ async function analyze(){
 /* RESULT */
 function renderResult(text){
   resultDiv.innerHTML=`
-    <div class="card">
-      <div class="mail-header">Gotowa odpowiedź do klienta</div>
-      <div class="mail-body">
-        ${extract("✉️ GOTOWA ODPOWIEDŹ DO KLIENTA",text)||text}
-      </div>
+    <div class="mail-card">
+      <div class="mail-label">Temat</div>
+      <div class="mail-subject">${extract("🧠 TYTUŁ SPRAWY",text)||"Odpowiedź"}</div>
+      <div class="mail-label">Treść wiadomości</div>
+      <div class="mail-body">${extract("✉️ GOTOWA ODPOWIEDŹ DO KLIENTA",text)||text}</div>
     </div>`;
 }
 
 /* COPY */
 function copyMail(){
-  const b=document.querySelector(".mail-body");
-  if(b)navigator.clipboard.writeText(b.innerText);
+  const body=document.querySelector(".mail-body");
+  if(!body)return;
+  navigator.clipboard.writeText(body.innerText);
+  const btn=document.getElementById("copyBtn");
+  btn.textContent="✔ Skopiowano";
+  btn.classList.add("copy-success");
+  setTimeout(()=>{
+    btn.textContent="Kopiuj odpowiedź";
+    btn.classList.remove("copy-success");
+  },2000);
 }
 
 renderHistory();

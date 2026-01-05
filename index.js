@@ -1,6 +1,9 @@
 import express from "express";
 import fetch from "node-fetch";
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
+
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET || "zmien_to_haslo";
 
@@ -36,7 +39,27 @@ const stylePrompts = {
 };
 
 // ===== KLUCZE DOSTĘPU =====
-const accessKeys = new Set();
+const keysFilePath = path.join(process.cwd(), "keys.json");
+
+function loadKeys() {
+  try {
+    const data = fs.readFileSync(keysFilePath, "utf-8");
+    return new Set(JSON.parse(data));
+  } catch (err) {
+    console.error("Nie można wczytać keys.json:", err);
+    return new Set();
+  }
+}
+
+function saveKeys(keysSet) {
+  fs.writeFileSync(
+    keysFilePath,
+    JSON.stringify([...keysSet], null, 2)
+  );
+}
+
+const accessKeys = loadKeys();
+
 
 // generator profesjonalnego klucza
 function generateAccessKey() {
@@ -171,8 +194,9 @@ app.post("/generate-key", (req, res) => {
     return res.status(403).json({ error: "Brak dostępu admina" });
   }
 
-  const newKey = generateAccessKey();
-  accessKeys.add(newKey);
+const newKey = generateAccessKey();
+accessKeys.add(newKey);
+
 
   res.json({
     key: newKey

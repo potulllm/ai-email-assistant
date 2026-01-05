@@ -117,7 +117,8 @@
   <div class="main">
     <h2>AI Email Assistant</h2>
 
-    <textarea id="emailInput" rows="7" placeholder="Wklej treść maila klienta"></textarea>
+    <textarea id="emailInput" rows="7"></textarea>
+
 
     <br><br>
 
@@ -186,6 +187,8 @@
   }
 
   async function analyze() {
+    alert(document.getElementById("emailInput").value);
+
     const email = document.getElementById("emailInput").value.trim();
 
     if (!email) {

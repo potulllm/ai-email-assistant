@@ -5,7 +5,6 @@
   <title>AI Email Assistant</title>
 
   <style>
-    /* ===== RESET / ZMIENNE ===== */
     :root {
       --bg-main: #f6f7f9;
       --bg-panel: #f4f4f4;
@@ -27,10 +26,9 @@
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      font-size: 16px;
       background: var(--bg-main);
       color: var(--text-main);
-      transition: background 0.2s, color 0.2s;
+      transition: background .2s, color .2s;
     }
 
     .app {
@@ -38,73 +36,26 @@
       height: 100vh;
     }
 
-    /* ===== LEWY PANEL ===== */
     .sidebar {
       width: 320px;
       background: var(--bg-panel);
       padding: 15px;
       overflow-y: auto;
-      border-right: 1px solid rgba(0,0,0,0.08);
-    }
-
-    .sidebar h3 {
-      margin-top: 0;
-    }
-
-    .top-actions {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
+      border-right: 1px solid rgba(0,0,0,.1);
     }
 
     .history-item {
       background: var(--bg-card);
       padding: 10px;
       margin-bottom: 10px;
-      cursor: pointer;
       border-radius: 6px;
-      font-size: 14px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      cursor: pointer;
     }
 
-    .history-item:hover {
-      opacity: 0.9;
-    }
+    .priority-wysoki { border-left: 5px solid #d97706; }
+    .priority-normalny { border-left: 5px solid #2563eb; }
+    .priority-niski { border-left: 5px solid #059669; }
 
-    .history-title {
-      font-weight: bold;
-      display: block;
-    }
-
-    .history-tags {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    /* ===== PRIORYTETY (STONOWANE) ===== */
-    .priority-wysoki {
-      border-left: 5px solid #d97706;
-      background: #fffaf3;
-    }
-
-    .priority-normalny {
-      border-left: 5px solid #2563eb;
-      background: #f5f9ff;
-    }
-
-    .priority-niski {
-      border-left: 5px solid #059669;
-      background: #f3fbf8;
-    }
-
-    body.dark .priority-wysoki,
-    body.dark .priority-normalny,
-    body.dark .priority-niski {
-      background: var(--bg-card);
-    }
-
-    /* ===== PRAWA STRONA ===== */
     .main {
       flex: 1;
       padding: 30px;
@@ -113,40 +64,24 @@
 
     textarea {
       width: 100%;
-      box-sizing: border-box;
-      font-size: 16px;
       padding: 10px;
+      font-size: 15px;
       background: var(--bg-box);
       color: var(--text-main);
-      border: 1px solid rgba(0,0,0,0.15);
-      border-radius: 4px;
     }
 
-    select {
+    select, button {
       margin-top: 6px;
       padding: 6px;
-      font-size: 15px;
-      width: 100%;
-      max-width: 420px;
-    }
-
-    button {
-      padding: 8px 14px;
       font-size: 14px;
-      cursor: pointer;
     }
 
-    pre {
-      margin-top: 15px;
+    #resultBox {
+      margin-top: 16px;
+      padding: 14px;
       background: var(--bg-box);
-      padding: 15px;
-      font-size: 15px;
-      white-space: pre-wrap;
       border-radius: 6px;
-    }
-
-    label {
-      font-weight: bold;
+      white-space: pre-wrap;
     }
   </style>
 </head>
@@ -155,24 +90,28 @@
 
 <div class="app">
 
-  <!-- ===== HISTORIA ===== -->
   <div class="sidebar">
-    <div class="top-actions">
-      <h3>Historia</h3>
-      <button onclick="toggleTheme()">🌙 / ☀️</button>
-    </div>
-    <div id="history"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;">
+    <h3>Historia</h3>
+    <button onclick="toggleTheme()">🌙 / ☀️</button>
   </div>
 
-  <!-- ===== GŁÓWNY PANEL ===== -->
+  <button onclick="clearHistory()" style="margin-bottom:10px;">
+    🗑️ Wyczyść historię
+  </button>
+
+  <div id="history"></div>
+</div>
+
+
   <div class="main">
     <h2>AI Email Assistant</h2>
 
-    <textarea id="email" placeholder="Wklej maila tutaj..." rows="7"></textarea>
+    <textarea id="emailInput" rows="7" placeholder="Wklej maila..."></textarea>
 
     <br><br>
 
-    <label>Typ odpowiedzi</label>
+    <label>Typ odpowiedzi</label><br>
     <select id="responseType">
       <option value="default">Standardowa</option>
       <option value="contact">Kontakt</option>
@@ -183,7 +122,7 @@
 
     <br><br>
 
-    <label>Styl odpowiedzi</label>
+    <label>Styl odpowiedzi</label><br>
     <select id="responseStyle">
       <option value="professional">Profesjonalny</option>
       <option value="friendly">Przyjazny</option>
@@ -192,9 +131,8 @@
       <option value="corporate">Korporacyjny</option>
     </select>
 
-    <div id="pricingBox" style="display:none; margin-top:10px;">
-      <label>Ceny / widełki</label>
-      <textarea id="pricingText" rows="3"></textarea>
+    <div id="pricingBox" style="display:none;">
+      <textarea id="pricingText" rows="3" placeholder="Widełki cenowe"></textarea>
     </div>
 
     <br>
@@ -202,146 +140,99 @@
     <button onclick="analyze()">Analizuj</button>
     <button onclick="copyResult()">Kopiuj odpowiedź</button>
 
-    <div id="result" style="margin-top:16px;"></div>
-
-
-    <pre id="result"></pre>
+    <div id="resultBox"></div>
   </div>
-
 </div>
 
 <script>
+const params = new URLSearchParams(window.location.search);
 
 
-  /* ===== THEME ===== */
-  const savedTheme = localStorage.getItem("theme") || "light";
-  document.body.classList.toggle("dark", savedTheme === "dark");
+const history = JSON.parse(localStorage.getItem("history") || "[]");
+const historyDiv = document.getElementById("history");
+const resultBox = document.getElementById("resultBox");
 
-  async function analyze() {
-    result.innerText = "Analiza...";
-
-    const key = new URLSearchParams(window.location.search).get("key");
-
-const response = await fetch("/analyze", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({ email })
-});
-
-  function toggleTheme() {
-    const isDark = document.body.classList.toggle("dark");
-    localStorage.setItem("theme", isDark ? "dark" : "light");
-  }
-
-  /* ===== HISTORIA ===== */
-  const history = JSON.parse(localStorage.getItem("history")) || [];
-  const historyDiv = document.getElementById("history");
-
-  function saveHistory() { 
-    localStorage.setItem("history", JSON.stringify(history));
-  }
-
-  function extract(text, label) {
-    const match = text.match(new RegExp(label + ":[\\s\\S]*?\\n([^\\n]*)"));
-    return match ? match[1].trim() : "";
-  }
-
-  function extractPriority(text) {
-    return extract(text, "⚠️ PRIORYTET") || "normalny";
-  }
-
-  function extractTitle(text) {
-    return extract(text, "🧠 TYTUŁ SPRAWY") || "Nowa sprawa";
-  }
-
-  function extractTags(text) {
-    return extract(text, "🏷️ TAGI");
-  }
-
-  document.getElementById("responseType").addEventListener("change", () => {
-    pricingBox.style.display =
-      responseType.value === "pricing" ? "block" : "none";
-  });
-
- 
-
-if (!response.ok) {
-  document.getElementById("result").innerHTML = `
-    <div style="padding:16px; border:1px solid #ccc; border-radius:8px;">
-      <strong>🔒 Dostęp płatny</strong><br><br>
-      Aby korzystać z aplikacji, wymagany jest zakup dostępu.<br><br>
-      <a href="https://potulllm.gumroad.com/l/AIEmailAssistant" target="_blank">
-        👉 Kup dostęp do aplikacji
-      </a>
-    </div>
-  `;
-  return;
+function toggleTheme() {
+  document.body.classList.toggle("dark");
 }
 
-const historydata = await response.json();
+document.getElementById("responseType").onchange = e => {
+  pricingBox.style.display = e.target.value === "pricing" ? "block" : "none";
+};
+
+async function analyze() {
+  const email = emailInput.value.trim();
+  if (!email) return;
 
 
-    const data = await res.json();
-    result.innerText = data.result;
+  const accessKey = new URLSearchParams(window.location.search).get("key");
 
-    history.unshift({
-      text: data.result,
-      priority: extractPriority(data.result),
-      title: extractTitle(data.result),
-      tags: extractTags(data.result),
-      timestamp: Date.now()
-    });
-
-    saveHistory();
-    renderHistory();
+  if (!accessKey) {
+    resultBox.innerHTML = `
+      🔒 Dostęp płatny<br><br>
+      <a href="https://potulllm.gumroad.com/l/AIEmailAssistant" target="_blank">
+        👉 Kup dostęp
+      </a>`;
+    return;
   }
 
-  function formatTime(ts) {
-    const d = new Date(ts);
-    return d.toLocaleString("pl-PL", {
-      hour: "2-digit",
-      minute: "2-digit",
-      day: "2-digit",
-      month: "2-digit"
-    });
+  resultBox.innerText = "Analiza...";
+
+  const response = await fetch(`/analyze?key=${accessKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email,
+      responseType: responseType.value,
+      responseStyle: responseStyle.value,
+      pricing: pricingText.value
+    })
+  });
+
+  if (!response.ok) {
+    resultBox.innerText = "Błąd dostępu.";
+    return;
   }
 
-  function renderHistory() {
-    historyDiv.innerHTML = "";
+  const data = await response.json();
+  resultBox.innerText = data.result;
 
-    const order = { wysoki: 1, normalny: 2, niski: 3 };
+  history.unshift({
+    text: data.result,
+    priority: "normalny",
+    title: "Mail klienta",
+    timestamp: Date.now()
+  });
 
-    [...history]
-      .sort((a, b) => order[a.priority] - order[b.priority])
-      .forEach(item => {
-        const div = document.createElement("div");
-        div.className = `history-item priority-${item.priority}`;
-        div.innerHTML = `
-          <span class="history-title">${item.title}</span>
-          <span class="history-tags">${item.tags}</span>
-          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
-            🕒 ${formatTime(item.timestamp)}
-          </div>
-        `;
-        div.onclick = () => (result.innerText = item.text);
-        historyDiv.appendChild(div);
-      });
-  }
-
-  function copyResult() {
-    const marker = "✉️ GOTOWA ODPOWIEDŹ DO KLIENTA:";
-    const text = result.innerText;
-    const idx = text.indexOf(marker);
-    if (idx !== -1) {
-      navigator.clipboard.writeText(text.slice(idx + marker.length).trim());
-    }
-  }
-
+  localStorage.setItem("history", JSON.stringify(history));
   renderHistory();
-console.log("JS ZAŁADOWANY");
+}
 
+ function clearHistory() {
+  if (!confirm("Czy na pewno wyczyścić historię?")) return;
+  localStorage.removeItem("history");
+  history.length = 0;
+  renderHistory();
+}
+
+
+function renderHistory() {
+  historyDiv.innerHTML = "";
+  history.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "history-item";
+    div.innerText = item.title;
+    div.onclick = () => resultBox.innerText = item.text;
+    historyDiv.appendChild(div);
+  });
+}
+
+function copyResult() {
+  navigator.clipboard.writeText(resultBox.innerText);
+}
+
+renderHistory();
+console.log("JS DZIAŁA");
 </script>
 
 </body>

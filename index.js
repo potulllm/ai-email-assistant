@@ -16,53 +16,43 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, "public")));
 
-/* ===== STYLE ODPOWIEDZI ===== */
-const stylePrompts = {
-  professional: `
-- formalna forma grzecznościowa (Pan / Pani / Państwo)
-- rzeczowy, spokojny ton
-- pełne, poprawne zdania
-`,
-  friendly: `
-- uprzejmy, cieplejszy ton
-- nadal forma grzecznościowa
-- bardziej ludzki język
-`,
-  concise: `
-- bardzo krótko i konkretnie
-- bez wstępów
-`,
-  partner: `
-- partnerski, doradczy ton
-- sugeruj rozwiązania
-`,
-  corporate: `
-- bardzo formalny, neutralny styl
-- język jak w dużej organizacji
-`
-};
-
 /* ===== KLUCZE ===== */
 const keysFilePath = path.join(__dirname, "keys.json");
 
+/* 🔒 GWARANCJA ISTNIENIA PLIKU */
+if (!fs.existsSync(keysFilePath)) {
+  fs.writeFileSync(keysFilePath, JSON.stringify([], null, 2));
+  console.log("Utworzono keys.json");
+}
+
+/* WCZYTANIE KLUCZY */
 function loadKeys() {
   try {
-    return new Set(JSON.parse(fs.readFileSync(keysFilePath, "utf-8")));
-  } catch {
+    const data = fs.readFileSync(keysFilePath, "utf-8");
+    return new Set(JSON.parse(data));
+  } catch (err) {
+    console.error("Błąd wczytywania keys.json:", err);
     return new Set();
   }
 }
 
+/* ZAPIS KLUCZY */
 function saveKeys() {
-  fs.writeFileSync(keysFilePath, JSON.stringify([...accessKeys], null, 2));
+  fs.writeFileSync(
+    keysFilePath,
+    JSON.stringify([...accessKeys], null, 2)
+  );
+  console.log("Zapisano keys.json:", [...accessKeys]);
 }
 
 const accessKeys = loadKeys();
 
+/* GENERATOR */
 function generateAccessKey() {
   return crypto.randomBytes(16).toString("hex");
 }
 
+/* MIDDLEWARE */
 function checkAccess(req, res, next) {
   const key = req.query.key;
   if (!key || !accessKeys.has(key)) {
@@ -83,46 +73,7 @@ app.post("/analyze", checkAccess, async (req, res) => {
       return res.json({ result: "Brak treści maila." });
     }
 
-    const styleRules =
-      stylePrompts[responseStyle] || stylePrompts.professional;
-
     const prompt = `
-FORMA JĘZYKOWA:
-- zawsze forma grzecznościowa
-- nigdy nie używaj „ty”
-
-STYL:
-${styleRules}
-
-TYP ODPOWIEDZI: ${responseType}
-
-JEŚLI TYP = pricing:
-- użyj TYLKO cen podanych przez użytkownika
-- jeśli brak cen, odpowiedz ogólnie
-
-CENY:
-${pricingText}
-
-ZWRÓĆ FORMAT:
-
-🧠 TYTUŁ SPRAWY:
-...
-
-🏷️ TAGI:
-...
-
-📂 KATEGORIA:
-...
-
-⚠️ PRIORYTET:
-wysoki / normalny / niski
-
-✉️ GOTOWA ODPOWIEDŹ DO KLIENTA:
-...
-
-📝 UWAGI:
-...
-
 MAIL KLIENTA:
 ${emailText}
 `;
@@ -137,11 +88,7 @@ ${emailText}
         },
         body: JSON.stringify({
           model: "gpt-4o-mini",
-          messages: [
-            { role: "system", content: "Jesteś profesjonalnym asystentem obsługi klienta." },
-            { role: "user", content: prompt }
-          ],
-          temperature: 0.6
+          messages: [{ role: "user", content: prompt }]
         })
       }
     );
@@ -149,18 +96,18 @@ ${emailText}
     const data = await aiResponse.json();
 
     if (!data.choices || !data.choices[0]) {
-      return res.json({ result: "Błąd AI – brak odpowiedzi." });
+      return res.json({ result: "Błąd AI." });
     }
 
     res.json({ result: data.choices[0].message.content });
 
   } catch (err) {
-    console.error(err);
+    console.error("Błąd serwera:", err);
     res.json({ result: "Błąd serwera." });
   }
 });
 
-/* ===== GENEROWANIE KLUCZY ===== */
+/* ===== GENEROWANIE KLUCZY (ADMIN) ===== */
 app.get("/generate-key", (req, res) => {
   if (req.query.admin !== ADMIN_SECRET) {
     return res.status(403).json({ error: "Brak dostępu admina" });

@@ -1,73 +1,85 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-  <meta charset="UTF-8">
-  <title>AI Email Assistant</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="UTF-8">
+<title>AI Email Assistant</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f6f7f9;
-      margin: 0;
-      display: flex;
-      height: 100vh;
-    }
-    .sidebar {
-      width: 300px;
-      background: #eceff3;
-      padding: 12px;
-      overflow-y: auto;
-      border-right: 1px solid #ccc;
-    }
-    .item {
-      background: #fff;
-      padding: 8px;
-      margin-bottom: 8px;
-      cursor: pointer;
-      border-left: 4px solid #2563eb;
-    }
-    .item.wysoki { border-color: #dc2626; }
-    .item.normalny { border-color: #2563eb; }
-    .item.niski { border-color: #16a34a; }
+<style>
+:root {
+  --bg-main:#f5f7fa;--bg-panel:#eef1f5;--bg-card:#fff;--bg-input:#fff;
+  --text-main:#1f2937;--text-muted:#6b7280;--border:#d1d5db;--accent:#2563eb;
+}
+body.dark {
+  --bg-main:#0f172a;--bg-panel:#020617;--bg-card:#020617;--bg-input:#020617;
+  --text-main:#e5e7eb;--text-muted:#9ca3af;--border:#1f2937;--accent:#60a5fa;
+}
+body{margin:0;font-family:"Segoe UI",system-ui,sans-serif;background:var(--bg-main);color:var(--text-main)}
+.app{display:flex;height:100vh}
 
-    .main {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-    }
-    textarea, select {
-      width: 100%;
-      margin-bottom: 8px;
-      padding: 8px;
-    }
-    button {
-      padding: 8px 14px;
-      margin-right: 6px;
-    }
-    pre {
-      background: #fff;
-      padding: 12px;
-      white-space: pre-wrap;
-    }
-  </style>
+/* SIDEBAR */
+.sidebar{width:340px;background:var(--bg-panel);padding:14px;border-right:1px solid var(--border);overflow-y:auto}
+.sidebar-header{display:flex;justify-content:space-between;align-items:center}
+.sidebar select{width:100%;margin:6px 0;padding:6px}
+.history-item{background:var(--bg-card);padding:10px;border-radius:8px;margin-bottom:10px;
+  cursor:pointer;border-left:4px solid var(--accent)}
+.history-item.wysoki{border-color:#dc2626}
+.history-item.normalny{border-color:#2563eb}
+.history-item.niski{border-color:#16a34a}
+.history-title{font-weight:600;font-size:14px}
+.history-meta{font-size:12px;color:var(--text-muted);margin-top:2px}
+
+/* MAIN */
+.main{flex:1;padding:30px;overflow-y:auto}
+textarea,select{width:100%;padding:10px;margin-bottom:12px;font-size:15px;
+  border-radius:6px;border:1px solid var(--border);background:var(--bg-input);color:var(--text-main)}
+button{padding:8px 14px;border-radius:6px;border:1px solid var(--border);
+  background:var(--bg-card);cursor:pointer;margin-right:6px}
+button.primary{background:var(--accent);color:#fff;border:none}
+
+/* RESULT */
+.card{background:var(--bg-card);border-radius:10px;padding:18px;margin-top:18px;
+  border:1px solid var(--border)}
+.mail-header{font-size:13px;color:var(--text-muted);margin-bottom:10px}
+.mail-body{white-space:pre-wrap;line-height:1.6;font-size:15px}
+</style>
 </head>
 
 <body>
 
+<div class="app">
+
+<!-- SIDEBAR -->
 <div class="sidebar">
-  <h3>Historia</h3>
-  <button onclick="clearHistory()">Wyczyść</button>
+  <div class="sidebar-header">
+    <h3>Historia</h3>
+    <button onclick="toggleTheme()">🌗</button>
+  </div>
+
+  <select id="sortMode">
+    <option value="newest">Najnowsze</option>
+    <option value="oldest">Najstarsze</option>
+    <option value="priority">Priorytet</option>
+  </select>
+
+  <select id="filterPriority">
+    <option value="all">Wszystkie</option>
+    <option value="wysoki">Wysoki</option>
+    <option value="normalny">Normalny</option>
+    <option value="niski">Niski</option>
+  </select>
+
   <div id="history"></div>
 </div>
 
+<!-- MAIN -->
 <div class="main">
   <h2>AI Email Assistant</h2>
 
-  <textarea id="emailInput" rows="6" placeholder="Wklej maila klienta"></textarea>
+  <textarea id="emailInput" rows="6" placeholder="Wklej maila od klienta..."></textarea>
 
   <select id="responseType">
-    <option value="default">Standardowa</option>
+    <option value="default">Standardowa odpowiedź</option>
     <option value="clarify">Doprecyzowanie</option>
     <option value="pricing">Wycena</option>
     <option value="decline">Odmowa</option>
@@ -81,86 +93,129 @@
     <option value="corporate">Korporacyjny</option>
   </select>
 
-  <textarea id="pricingText" rows="3" placeholder="Ceny / widełki (opcjonalnie)"></textarea>
+  <textarea id="pricingText" rows="3" placeholder="Ceny / widełki (tylko dla wyceny)"
+    style="display:none"></textarea>
 
-  <button onclick="analyze()">Analizuj</button>
-  <button onclick="copyResult()">Kopiuj odpowiedź</button>
+  <button class="primary" onclick="analyze()">Analizuj</button>
+  <button onclick="copyMail()">Kopiuj maila</button>
 
-  <pre id="result"></pre>
+  <div id="result"></div>
+</div>
+
 </div>
 
 <script>
-  const resultBox = document.getElementById("result");
-  const historyDiv = document.getElementById("history");
-  const history = JSON.parse(localStorage.getItem("history") || "[]");
+/* THEME */
+if(localStorage.getItem("theme")==="dark")document.body.classList.add("dark");
+function toggleTheme(){
+  const d=document.body.classList.toggle("dark");
+  localStorage.setItem("theme",d?"dark":"light");
+}
 
-  function extract(label, text) {
-    const m = text.match(new RegExp(label + ":[\\s\\S]*?\\n([^\\n]*)"));
-    return m ? m[1].trim() : "";
+/* PRICING VISIBILITY */
+responseType.onchange=()=>pricingText.style.display=
+  responseType.value==="pricing"?"block":"none";
+
+/* HISTORY */
+let history=JSON.parse(localStorage.getItem("history")||"[]");
+const historyDiv=document.getElementById("history");
+const resultDiv=document.getElementById("result");
+
+function extract(label,text){
+  const m=text.match(new RegExp(label+":([\\s\\S]*?)\\n"));
+  return m?m[1].trim():"";
+}
+
+function formatTime(ts){
+  const d=new Date(ts);
+  return d.toLocaleDateString("pl-PL",{day:"2-digit",month:"2-digit"})+
+    " • "+d.toLocaleTimeString("pl-PL",{hour:"2-digit",minute:"2-digit"});
+}
+
+function renderHistory(){
+  historyDiv.innerHTML="";
+  let items=[...history];
+
+  const filter=filterPriority.value;
+  if(filter!=="all")items=items.filter(i=>i.priority===filter);
+
+  if(sortMode.value==="newest")items.sort((a,b)=>b.time-a.time);
+  if(sortMode.value==="oldest")items.sort((a,b)=>a.time-b.time);
+  if(sortMode.value==="priority"){
+    const o={wysoki:1,normalny:2,niski:3};
+    items.sort((a,b)=>o[a.priority]-o[b.priority]);
   }
 
-  function renderHistory() {
-    historyDiv.innerHTML = "";
-    history.forEach(item => {
-      const div = document.createElement("div");
-      div.className = "item " + item.priority;
-      div.innerText = item.title;
-      div.onclick = () => resultBox.innerText = item.text;
-      historyDiv.appendChild(div);
-    });
+  items.forEach(item=>{
+    const div=document.createElement("div");
+    div.className="history-item "+item.priority;
+    div.innerHTML=`
+      <div class="history-title">${item.title}</div>
+      <div class="history-meta">${formatTime(item.time)} • ${item.priority}</div>
+    `;
+    div.onclick=()=>renderResult(item.text);
+    historyDiv.appendChild(div);
+  });
+}
+
+sortMode.onchange=filterPriority.onchange=renderHistory;
+
+/* ANALYZE */
+async function analyze(){
+  const email=emailInput.value;
+  if(!email){
+    resultDiv.innerHTML="<div class='card'>Brak treści maila.</div>";
+    return;
   }
-
-  function clearHistory() {
-    localStorage.removeItem("history");
-    history.length = 0;
-    renderHistory();
+  const key=new URLSearchParams(window.location.search).get("key");
+  if(!key){
+    resultDiv.innerHTML="<div class='card'>Dostęp płatny.<br><a href='https://potulllm.gumroad.com/l/AIEmailAssistant'>Kup dostęp</a></div>";
+    return;
   }
+  resultDiv.innerHTML="<div class='card'>Analiza...</div>";
 
-  async function analyze() {
-    const email = document.getElementById("emailInput").value;
-    if (!email) {
-      resultBox.innerText = "Brak treści maila.";
-      return;
-    }
+  const res=await fetch("/analyze?key="+key,{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      email,
+      responseType:responseType.value,
+      responseStyle:responseStyle.value,
+      pricingText:pricingText.value
+    })
+  });
+  const data=await res.json();
+  renderResult(data.result);
 
-    const key = new URLSearchParams(window.location.search).get("key");
-    if (!key) {
-      resultBox.innerHTML =
-        "Dostęp płatny.<br><a href='https://potulllm.gumroad.com/l/AIEmailAssistant'>Kup dostęp</a>";
-      return;
-    }
+  history.unshift({
+    text:data.result,
+    title:extract("🧠 TYTUŁ SPRAWY",data.result)||"Mail",
+    priority:extract("⚠️ PRIORYTET",data.result)||"normalny",
+    time:Date.now()
+  });
 
-    resultBox.innerText = "Analiza...";
-
-    const res = await fetch("/analyze?key=" + key, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        responseType: responseType.value,
-        responseStyle: responseStyle.value,
-        pricingText: pricingText.value
-      })
-    });
-
-    const data = await res.json();
-    resultBox.innerText = data.result;
-
-    history.unshift({
-      text: data.result,
-      title: extract("🧠 TYTUŁ SPRAWY", data.result) || "Mail",
-      priority: extract("⚠️ PRIORYTET", data.result) || "normalny"
-    });
-
-    localStorage.setItem("history", JSON.stringify(history));
-    renderHistory();
-  }
-
-  function copyResult() {
-    navigator.clipboard.writeText(resultBox.innerText);
-  }
-
+  localStorage.setItem("history",JSON.stringify(history));
   renderHistory();
+}
+
+/* RESULT */
+function renderResult(text){
+  resultDiv.innerHTML=`
+    <div class="card">
+      <div class="mail-header">Gotowa odpowiedź do klienta</div>
+      <div class="mail-body">
+        ${extract("✉️ GOTOWA ODPOWIEDŹ DO KLIENTA",text)||text}
+      </div>
+    </div>`;
+}
+
+/* COPY */
+function copyMail(){
+  const b=document.querySelector(".mail-body");
+  if(b)navigator.clipboard.writeText(b.innerText);
+}
+
+renderHistory();
 </script>
 
 </body>

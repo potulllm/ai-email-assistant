@@ -153,7 +153,8 @@
 </div>
 
 <script>
-  console.log("JS START");
+  console.log("WERSJA 2026-01-05");
+
 
   const resultBox = document.getElementById("result");
   const historyDiv = document.getElementById("history");
@@ -187,46 +188,44 @@
   }
 
   async function analyze() {
-    alert(document.getElementById("emailInput").value);
+  const email = document.getElementById("emailInput").value;
 
-    const email = document.getElementById("emailInput").value.trim();
+  if (email.trim().length === 0) {
+    resultBox.textContent = "Brak treści maila.";
+    return;
+  }
 
-    if (!email) {
-      resultBox.textContent = "Brak treści maila.";
-      return;
-    }
+  const accessKey = new URLSearchParams(window.location.search).get("key");
 
-    const accessKey = new URLSearchParams(window.location.search).get("key");
+  if (!accessKey) {
+    resultBox.innerHTML =
+      "<strong>Dostęp płatny</strong><br><br>" +
+      "Aby korzystać z aplikacji, wymagany jest zakup dostępu.<br><br>" +
+      "<a href='https://potulllm.gumroad.com/l/AIEmailAssistant' target='_blank'>Kup dostęp</a>";
+    return;
+  }
 
-    if (!accessKey) {
-      resultBox.innerHTML =
-        "<strong>Dostęp płatny</strong><br><br>" +
-        "Aby korzystać z aplikacji, wymagany jest zakup dostępu.<br><br>" +
-        "<a href='https://potulllm.gumroad.com/l/AIEmailAssistant' target='_blank'>" +
-        "Kup dostęp</a>";
-      return;
-    }
+  resultBox.textContent = "Analiza...";
 
-    resultBox.textContent = "Analiza...";
+  const response = await fetch("/analyze?key=" + accessKey, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: email,
+      responseType: responseType.value,
+      responseStyle: responseStyle.value
+    })
+  });
 
-    try {
-      const response = await fetch("/analyze?key=" + accessKey, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: email,
-          responseType: document.getElementById("responseType").value,
-          responseStyle: document.getElementById("responseStyle").value
-        })
-      });
+  if (!response.ok) {
+    resultBox.textContent = "Błąd serwera.";
+    return;
+  }
 
-      if (!response.ok) {
-        resultBox.textContent = "Błąd serwera.";
-        return;
-      }
+  const data = await response.json();
+  resultBox.textContent = data.result || "Brak odpowiedzi.";
+}
 
-      const data = await response.json();
-      resultBox.textContent = data.result || "Brak odpowiedzi.";
 
       history.unshift({
         title: "Mail klienta",

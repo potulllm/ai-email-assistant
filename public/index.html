@@ -49,7 +49,8 @@
   <textarea id="emailInput" placeholder="Wklej treść maila klienta"></textarea>
   <br>
 
-  <button onclick="analyze()">Analizuj</button>
+  <button type="button" onclick="analyze()">Analizuj</button>
+
 
   <div id="result"></div>
 
@@ -57,12 +58,15 @@
     console.log("JS DZIALA");
 
     function analyze() {
-      var email = document.getElementById("emailInput").value;
+     var textarea = document.getElementById("emailInput");
+     var email = textarea.value;
 
-      if (email.trim().length === 0) {
-        document.getElementById("result").innerText = "Brak tresci maila.";
-        return;
-      }
+     console.log("EMAIL VALUE:", email);
+
+     if (!email || email.length === 0) {
+      document.getElementById("result").innerText = "Brak tresci maila.";
+      return;
+     }
 
       var params = new URLSearchParams(window.location.search);
       var accessKey = params.get("key");

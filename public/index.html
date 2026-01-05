@@ -202,6 +202,9 @@
     <button onclick="analyze()">Analizuj</button>
     <button onclick="copyResult()">Kopiuj odpowiedź</button>
 
+    <div id="result" style="margin-top:16px;"></div>
+
+
     <pre id="result"></pre>
   </div>
 
@@ -223,7 +226,7 @@
   const history = JSON.parse(localStorage.getItem("history")) || [];
   const historyDiv = document.getElementById("history");
 
-  function saveHistory() {
+  function saveHistory() { 
     localStorage.setItem("history", JSON.stringify(history));
   }
 
@@ -254,16 +257,29 @@
 
     const key = new URLSearchParams(window.location.search).get("key");
 
-    const res = await fetch(`/analyze?key=${key}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        text: email.value,
-        responseType: responseType.value,
-        responseStyle: responseStyle.value,
-        pricingText: pricingText.value
-      })
-    });
+const response = await fetch("/analyze", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ email })
+});
+
+if (!response.ok) {
+  document.getElementById("result").innerHTML = `
+    <div style="padding:16px; border:1px solid #ccc; border-radius:8px;">
+      <strong>🔒 Dostęp płatny</strong><br><br>
+      Aby korzystać z aplikacji, wymagany jest zakup dostępu.<br><br>
+      <a href="https://potulllm.gumroad.com/l/AIEmailAssistant" target="_blank">
+        👉 Kup dostęp do aplikacji
+      </a>
+    </div>
+  `;
+  return;
+}
+
+const data = await response.json();
+
 
     const data = await res.json();
     result.innerText = data.result;

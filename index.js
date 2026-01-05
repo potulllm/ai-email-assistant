@@ -3,14 +3,18 @@ import fetch from "node-fetch";
 import crypto from "crypto";
 import fs from "fs";
 import path from "path";
-
-
-const ADMIN_SECRET = process.env.ADMIN_SECRET || "zmien_to_haslo";
-
+import { fileURLToPath } from "url";
 
 const app = express();
+const PORT = process.env.PORT || 3000;
+const ADMIN_SECRET = process.env.ADMIN_SECRET || "zmien_to_haslo";
+
+/* ===== PODSTAWY ===== */
 app.use(express.json());
-app.use(express.static("public"));
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use(express.static(path.join(__dirname, "public")));
 
 /* ===== STYLE ODPOWIEDZI ===== */
 const stylePrompts = {
@@ -26,7 +30,7 @@ const stylePrompts = {
 `,
   concise: `
 - bardzo krótko i konkretnie
-- bez wstępów i lania wody
+- bez wstępów
 `,
   partner: `
 - partnerski, doradczy ton
@@ -38,30 +42,23 @@ const stylePrompts = {
 `
 };
 
-// ===== KLUCZE DOSTĘPU =====
-const keysFilePath = path.join(process.cwd(), "keys.json");
+/* ===== KLUCZE ===== */
+const keysFilePath = path.join(__dirname, "keys.json");
 
 function loadKeys() {
   try {
-    const data = fs.readFileSync(keysFilePath, "utf-8");
-    return new Set(JSON.parse(data));
-  } catch (err) {
-    console.error("Nie można wczytać keys.json:", err);
+    return new Set(JSON.parse(fs.readFileSync(keysFilePath, "utf-8")));
+  } catch {
     return new Set();
   }
 }
 
-function saveKeys(keysSet) {
-  fs.writeFileSync(
-    keysFilePath,
-    JSON.stringify([...keysSet], null, 2)
-  );
+function saveKeys() {
+  fs.writeFileSync(keysFilePath, JSON.stringify([...accessKeys], null, 2));
 }
 
 const accessKeys = loadKeys();
 
-
-// generator profesjonalnego klucza
 function generateAccessKey() {
   return crypto.randomBytes(16).toString("hex");
 }
@@ -74,11 +71,10 @@ function checkAccess(req, res, next) {
   next();
 }
 
-
-/* ===== ENDPOINT ===== */
+/* ===== ANALYZE ===== */
 app.post("/analyze", checkAccess, async (req, res) => {
   try {
-    const emailText = req.body.text || "";
+    const emailText = req.body.email || "";
     const responseType = req.body.responseType || "default";
     const responseStyle = req.body.responseStyle || "professional";
     const pricingText = req.body.pricingText || "";
@@ -91,65 +87,47 @@ app.post("/analyze", checkAccess, async (req, res) => {
       stylePrompts[responseStyle] || stylePrompts.professional;
 
     const prompt = `
-FORMA JĘZYKOWA (OBOWIĄZKOWA):
-- ZAWSZE używaj formy grzecznościowej (Pan / Pani / Państwo)
-- NIGDY nie używaj formy „ty”
-- NIGDY nie używaj słów: „mógłbyś”, „możesz”, „daj znać”
+FORMA JĘZYKOWA:
+- zawsze forma grzecznościowa
+- nigdy nie używaj „ty”
 
-STYL ODPOWIEDZI:
+STYL:
 ${styleRules}
-
-ZASADY OGÓLNE:
-- brzmi jak człowiek, nie jak bot
-- nie kończ odpowiedzi pustą obietnicą kontaktu
-- pisz konkretnie, bez lania wody
-
-ZABRONIONE FRAZY:
-- skontaktujemy się
-- wrócimy do Państwa
-- dziękujemy za kontakt
-- w razie pytań prosimy o kontakt
 
 TYP ODPOWIEDZI: ${responseType}
 
-JEŚLI TYP TO "pricing":
-- użyj WYŁĄCZNIE cen podanych przez użytkownika
-- NIE wymyślaj żadnych kwot
-- jeśli ceny są puste, napisz ogólnie, bez liczb
+JEŚLI TYP = pricing:
+- użyj TYLKO cen podanych przez użytkownika
+- jeśli brak cen, odpowiedz ogólnie
 
-CENY PODANE PRZEZ UŻYTKOWNIKA:
+CENY:
 ${pricingText}
 
-ZWRÓĆ ODPOWIEDŹ DOKŁADNIE W TYM FORMACIE:
+ZWRÓĆ FORMAT:
 
 🧠 TYTUŁ SPRAWY:
-<maks. 6 słów, bez uprzejmości, samo sedno>
+...
 
 🏷️ TAGI:
-<2–4 krótkie hasła oddzielone przecinkami>
+...
 
 📂 KATEGORIA:
-<jedno słowo>
+...
 
 ⚠️ PRIORYTET:
-<wysoki / normalny / niski>
+wysoki / normalny / niski
 
 ✉️ GOTOWA ODPOWIEDŹ DO KLIENTA:
-<formalna, konkretna odpowiedź – gotowa do wysłania>
+...
 
 📝 UWAGI:
-<jedno zdanie – emocje klienta / pilność / sprzedaż>
-
-JEŚLI BRAKUJE INFORMACJI:
-- zadaj 1–3 konkretne pytania
-- każde pytanie w osobnej linii
-- NIE używaj formy „ty”
+...
 
 MAIL KLIENTA:
 ${emailText}
 `;
 
-    const response = await fetch(
+    const aiResponse = await fetch(
       "https://api.openai.com/v1/chat/completions",
       {
         method: "POST",
@@ -160,11 +138,7 @@ ${emailText}
         body: JSON.stringify({
           model: "gpt-4o-mini",
           messages: [
-            {
-              role: "system",
-              content:
-                "Jesteś doświadczonym asystentem obsługi klienta. Analizujesz maile i tworzysz profesjonalne odpowiedzi."
-            },
+            { role: "system", content: "Jesteś profesjonalnym asystentem obsługi klienta." },
             { role: "user", content: prompt }
           ],
           temperature: 0.6
@@ -172,54 +146,34 @@ ${emailText}
       }
     );
 
-    const data = await response.json();
+    const data = await aiResponse.json();
 
     if (!data.choices || !data.choices[0]) {
-      console.error("BŁĄD OPENAI:", data);
       return res.json({ result: "Błąd AI – brak odpowiedzi." });
     }
 
     res.json({ result: data.choices[0].message.content });
 
   } catch (err) {
-    console.error("BŁĄD SERWERA:", err);
+    console.error(err);
     res.json({ result: "Błąd serwera." });
   }
 });
 
-app.post("/generate-key", (req, res) => {
-  const admin = req.query.admin;
-
-  if (admin !== ADMIN_SECRET) {
-    return res.status(403).json({ error: "Brak dostępu admina" });
-  }
-
-const newKey = generateAccessKey();
-accessKeys.add(newKey);
-
-
-  res.json({
-    key: newKey
-  });
-});
-
+/* ===== GENEROWANIE KLUCZY ===== */
 app.get("/generate-key", (req, res) => {
-  const admin = req.query.admin;
-
-  if (admin !== ADMIN_SECRET) {
+  if (req.query.admin !== ADMIN_SECRET) {
     return res.status(403).json({ error: "Brak dostępu admina" });
   }
 
   const newKey = generateAccessKey();
   accessKeys.add(newKey);
+  saveKeys();
 
-  res.json({
-    key: newKey
-  });
+  res.json({ key: newKey });
 });
 
-
-
-app.listen(3000, () => {
-  console.log("Serwer działa na http://localhost:3000");
+/* ===== START ===== */
+app.listen(PORT, () => {
+  console.log("Serwer działa na http://localhost:" + PORT);
 });

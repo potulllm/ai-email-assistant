@@ -3,26 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <title>AI Email Assistant</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
     :root {
       --bg-main: #f6f7f9;
-      --bg-panel: #f4f4f4;
-      --bg-card: #ffffff;
-      --bg-box: #f1f3f5;
+      --bg-panel: #f1f3f5;
+      --bg-box: #ffffff;
       --text-main: #1f2937;
-      --text-muted: #6b7280;
-      --border: rgba(0,0,0,.1);
+      --border: #d1d5db;
     }
 
     body.dark {
       --bg-main: #0f172a;
       --bg-panel: #020617;
-      --bg-card: #020617;
       --bg-box: #020617;
       --text-main: #e5e7eb;
-      --text-muted: #9ca3af;
-      --border: rgba(255,255,255,.1);
+      --border: #1f2937;
     }
 
     body {
@@ -38,26 +35,25 @@
     }
 
     .sidebar {
-      width: 320px;
+      width: 280px;
       background: var(--bg-panel);
       padding: 15px;
       border-right: 1px solid var(--border);
       overflow-y: auto;
     }
 
-    .sidebar-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .sidebar h3 {
+      margin-top: 0;
     }
 
     .history-item {
-      background: var(--bg-card);
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 6px;
+      background: var(--bg-box);
+      padding: 8px;
+      margin-bottom: 8px;
+      border-radius: 4px;
       cursor: pointer;
-      border-left: 5px solid #2563eb;
+      border-left: 4px solid #2563eb;
+      font-size: 14px;
     }
 
     .main {
@@ -70,24 +66,31 @@
       width: 100%;
       padding: 10px;
       font-size: 15px;
-      background: var(--bg-box);
-      color: var(--text-main);
       border: 1px solid var(--border);
       border-radius: 4px;
+      background: var(--bg-box);
+      color: var(--text-main);
     }
 
     select, button {
-      margin-top: 6px;
+      margin-top: 8px;
       padding: 6px;
       font-size: 14px;
     }
 
-    #resultBox {
+    #result {
       margin-top: 16px;
-      padding: 14px;
+      padding: 12px;
+      border-radius: 4px;
       background: var(--bg-box);
-      border-radius: 6px;
+      border: 1px solid var(--border);
       white-space: pre-wrap;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     a {
@@ -101,22 +104,20 @@
 
 <div class="app">
 
-  <!-- SIDEBAR -->
   <div class="sidebar">
-    <div class="sidebar-header">
+    <div class="top-bar">
       <h3>Historia</h3>
-      <button onclick="toggleTheme()">🌙 /☀️</button>
+      <button onclick="toggleTheme()">Tryb</button>
     </div>
 
-    <button onclick="clearHistory()">🗑️ Wyczyść historię</button>
+    <button onclick="clearHistory()">Wyczyść historię</button>
     <div id="history"></div>
   </div>
 
-  <!-- MAIN -->
   <div class="main">
     <h2>AI Email Assistant</h2>
 
-    <textarea id="emailInput" rows="7" placeholder="Wklej maila klienta..."></textarea>
+    <textarea id="emailInput" rows="7" placeholder="Wklej treść maila klienta"></textarea>
 
     <br><br>
 
@@ -140,42 +141,39 @@
       <option value="corporate">Korporacyjny</option>
     </select>
 
-    <div id="pricingBox" style="display:none;">
-      <textarea id="pricingText" rows="3" placeholder="Widełki cenowe"></textarea>
-    </div>
-
-    <br>
+    <br><br>
 
     <button onclick="analyze()">Analizuj</button>
     <button onclick="copyResult()">Kopiuj odpowiedź</button>
 
-    <div id="resultBox"></div>
+    <div id="result"></div>
   </div>
 
 </div>
 
 <script>
-  // THEME
-  const savedTheme = localStorage.getItem("theme");
-  if (savedTheme === "dark") document.body.classList.add("dark");
+  console.log("JS START");
+
+  const resultBox = document.getElementById("result");
+  const historyDiv = document.getElementById("history");
+  const history = JSON.parse(localStorage.getItem("history") || "[]");
 
   function toggleTheme() {
     const dark = document.body.classList.toggle("dark");
     localStorage.setItem("theme", dark ? "dark" : "light");
   }
 
-  // HISTORY
-  const history = JSON.parse(localStorage.getItem("history") || "[]");
-  const historyDiv = document.getElementById("history");
-  const resultBox = document.getElementById("resultBox");
+  if (localStorage.getItem("theme") === "dark") {
+    document.body.classList.add("dark");
+  }
 
   function renderHistory() {
     historyDiv.innerHTML = "";
     history.forEach(item => {
       const div = document.createElement("div");
       div.className = "history-item";
-      div.innerText = item.title;
-      div.onclick = () => resultBox.innerText = item.text;
+      div.textContent = item.title;
+      div.onclick = () => resultBox.textContent = item.text;
       historyDiv.appendChild(div);
     });
   }
@@ -187,75 +185,65 @@
     renderHistory();
   }
 
-  renderHistory();
-
-  document.getElementById("responseType").onchange = e => {
-    pricingBox.style.display = e.target.value === "pricing" ? "block" : "none";
-  };
-
-  // ANALYZE
   async function analyze() {
     const email = document.getElementById("emailInput").value.trim();
 
     if (!email) {
-      resultBox.innerText = "Brak treści maila.";
+      resultBox.textContent = "Brak treści maila.";
       return;
     }
 
     const accessKey = new URLSearchParams(window.location.search).get("key");
 
     if (!accessKey) {
-      resultBox.innerHTML = `
-        <strong>🔒 Dostęp płatny</strong><br><br>
-        Aby korzystać z aplikacji, wymagany jest zakup dostępu.<br><br>
-        <a href="https://potulllm.gumroad.com/l/AIEmailAssistant" target="_blank">
-          👉 Kup dostęp
-        </a>
-      `;
+      resultBox.innerHTML =
+        "<strong>Dostęp płatny</strong><br><br>" +
+        "Aby korzystać z aplikacji, wymagany jest zakup dostępu.<br><br>" +
+        "<a href='https://potulllm.gumroad.com/l/AIEmailAssistant' target='_blank'>" +
+        "Kup dostęp</a>";
       return;
     }
 
-    resultBox.innerText = "Analiza...";
+    resultBox.textContent = "Analiza...";
 
     try {
-      const response = await fetch(\`/analyze?key=\${accessKey}\`, {
+      const response = await fetch("/analyze?key=" + accessKey, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email,
-          responseType: responseType.value,
-          responseStyle: responseStyle.value,
-          pricing: pricingText.value
+          email: email,
+          responseType: document.getElementById("responseType").value,
+          responseStyle: document.getElementById("responseStyle").value
         })
       });
 
       if (!response.ok) {
-        resultBox.innerText = "Błąd serwera lub dostępu.";
+        resultBox.textContent = "Błąd serwera.";
         return;
       }
 
       const data = await response.json();
-      resultBox.innerText = data.result || "Brak odpowiedzi AI.";
+      resultBox.textContent = data.result || "Brak odpowiedzi.";
 
       history.unshift({
         title: "Mail klienta",
-        text: data.result,
-        timestamp: Date.now()
+        text: resultBox.textContent
       });
 
       localStorage.setItem("history", JSON.stringify(history));
       renderHistory();
 
     } catch (e) {
-      resultBox.innerText = "Błąd połączenia z serwerem.";
+      resultBox.textContent = "Błąd połączenia.";
     }
   }
 
   function copyResult() {
-    navigator.clipboard.writeText(resultBox.innerText);
+    navigator.clipboard.writeText(resultBox.textContent);
   }
 
-  console.log("JS DZIAŁA");
+  renderHistory();
+  console.log("JS END");
 </script>
 
 </body>

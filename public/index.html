@@ -104,8 +104,12 @@ button.copy-success{background:#16a34a;color:#fff}
 <div class="sidebar">
   <div class="sidebar-header">
     <h3>Historia</h3>
-    <button onclick="toggleTheme()">🌗</button>
+    <div style="display:flex; gap:6px">
+      <button onclick="clearHistory()" title="Wyczyść historię">🗑️</button>
+      <button onclick="toggleTheme()" title="Tryb jasny / ciemny">🌗</button>
+    </div>
   </div>
+
   <div id="history"></div>
 </div>
 
@@ -121,13 +125,6 @@ button.copy-success{background:#16a34a;color:#fff}
     <option value="clarify">Prośba o doprecyzowanie</option>
     <option value="pricing">Informacja o wycenie</option>
     <option value="decline">Odmowa</option>
-  </select>
-
-  <select id="quickReply">
-    <option value="">— Szybka odpowiedź —</option>
-    <option value="contact">Kontakt wkrótce</option>
-    <option value="clarify">Prośba o doprecyzowanie</option>
-    <option value="pricing">Informacja o wycenie</option>
   </select>
 
   <select id="responseStyle">
@@ -343,6 +340,16 @@ function copyMail(){
 }
 
 renderHistory();
+
+function clearHistory(){
+  if(!confirm("Czy na pewno wyczyścić historię?")) return;
+  localStorage.removeItem("history");
+  history.length = 0;
+  renderHistory();
+  resultDiv.innerHTML = "";
+}
+
+
 </script>
 
 </body>

@@ -341,13 +341,6 @@ function copyMail(){
 
 renderHistory();
 
-function clearHistory(){
-  if(!confirm("Czy na pewno wyczyścić historię?")) return;
-  localStorage.removeItem("history");
-  history.length = 0;
-  renderHistory();
-  resultDiv.innerHTML = "";
-}
 
 
 </script>

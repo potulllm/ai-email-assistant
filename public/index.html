@@ -116,14 +116,18 @@ button.copy-success{background:#16a34a;color:#fff}
   <textarea id="emailInput" rows="6" placeholder="Wklej maila od klienta..."></textarea>
 
   <select id="responseType">
-	<select id="quickReply">
-    <option value="">— Szybka odpowiedź —</option>
-	<option value="default">Standardowa</option>
+    <option value="default">Standardowa</option>
     <option value="contact">Kontakt wkrótce</option>
     <option value="clarify">Prośba o doprecyzowanie</option>
     <option value="pricing">Informacja o wycenie</option>
-	<option value="decline">Odmowa</option>
-</select>
+    <option value="decline">Odmowa</option>
+  </select>
+
+  <select id="quickReply">
+    <option value="">— Szybka odpowiedź —</option>
+    <option value="contact">Kontakt wkrótce</option>
+    <option value="clarify">Prośba o doprecyzowanie</option>
+    <option value="pricing">Informacja o wycenie</option>
   </select>
 
   <select id="responseStyle">
@@ -145,7 +149,18 @@ button.copy-success{background:#16a34a;color:#fff}
 
 </div>
 
-quickReply.onchange = () => {
+<script>
+/* THEME */
+if(localStorage.getItem("theme")==="dark")document.body.classList.add("dark");
+function toggleTheme(){
+  const d=document.body.classList.toggle("dark");
+  localStorage.setItem("theme",d?"dark":"light");
+}
+
+document.getElementById("quickReply").onchange = () => {
+  const quickReply = document.getElementById("quickReply");
+  const emailInput = document.getElementById("emailInput");
+
   if (quickReply.value === "contact") {
     emailInput.value += "\n\nProszę o chwilę cierpliwości — wrócimy z informacją.";
   }
@@ -155,16 +170,10 @@ quickReply.onchange = () => {
   if (quickReply.value === "pricing") {
     emailInput.value += "\n\nPrzygotujemy orientacyjną wycenę po otrzymaniu szczegółów.";
   }
+
+  quickReply.value = "";
 };
 
-
-<script>
-/* THEME */
-if(localStorage.getItem("theme")==="dark")document.body.classList.add("dark");
-function toggleTheme(){
-  const d=document.body.classList.toggle("dark");
-  localStorage.setItem("theme",d?"dark":"light");
-}
 responseType.onchange=()=>pricingText.style.display=
   responseType.value==="pricing"?"block":"none";
 
@@ -273,10 +282,26 @@ async function analyze(){
     title:extract("🧠 TYTUŁ SPRAWY",data.result),
     priority:extract("⚠️ PRIORYTET",data.result),
     time:new Date().toLocaleString("pl-PL")
-});
   });
   localStorage.setItem("history",JSON.stringify(history));
   renderHistory();
+}
+
+function extractBlock(label, text) {
+  const start = text.indexOf(label);
+  if (start === -1) return "—";
+
+  const afterLabel = text.slice(start + label.length);
+  const nextSection = afterLabel.search(/\n[A-Z🧠📂⚠️🏷️✉️📝]/);
+
+  if (nextSection === -1) {
+    return afterLabel.replace(/^:\s*/, "").trim();
+  }
+
+  return afterLabel
+    .slice(0, nextSection)
+    .replace(/^:\s*/, "")
+    .trim();
 }
 
 /* RENDER RESULT */
@@ -300,23 +325,6 @@ function renderResult(text){
     </div>
 
   </div>`;
-}
-
-function extractBlock(label, text) {
-  const start = text.indexOf(label);
-  if (start === -1) return "—";
-
-  const afterLabel = text.slice(start + label.length);
-  const nextSection = afterLabel.search(/\n[A-Z🧠📂⚠️🏷️✉️📝]/);
-
-  if (nextSection === -1) {
-    return afterLabel.replace(/^:\s*/, "").trim();
-  }
-
-  return afterLabel
-    .slice(0, nextSection)
-    .replace(/^:\s*/, "")
-    .trim();
 }
 
 

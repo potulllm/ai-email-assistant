@@ -9,10 +9,12 @@
 :root{
   --bg-main:#f5f7fa;--bg-panel:#eef1f5;--bg-card:#ffffff;--bg-input:#ffffff;
   --text-main:#1f2937;--text-muted:#6b7280;--border:#d1d5db;--accent:#2563eb;
+  --btn-bg:#2563eb;--btn-text:#ffffff;
 }
 body.dark{
   --bg-main:#0f172a;--bg-panel:#020617;--bg-card:#020617;--bg-input:#020617;
   --text-main:#e5e7eb;--text-muted:#9ca3af;--border:#1f2937;--accent:#60a5fa;
+  --btn-bg:#60a5fa;--btn-text:#020617;
 }
 body{
   margin:0;font-family:"Segoe UI",system-ui,sans-serif;
@@ -48,50 +50,35 @@ textarea,select{
 button{
   padding:10px 16px;border-radius:6px;
   border:1px solid var(--border);
-  background:var(--accent);
-  color:#fff;
+  background:var(--btn-bg);
+  color:var(--btn-text);
   cursor:pointer;
   font-size:14px;
   font-weight:600;
 }
-button.secondary{
-  background:transparent;
-  color:var(--accent);
-}
-button:hover{opacity:0.9}
+button.copy-success{background:#16a34a;color:#fff}
 
 /* RESULT */
+.result-grid{
+  display:grid;
+  grid-template-columns: 1.3fr 0.7fr;
+  gap:20px;
+  margin-top:20px;
+  max-width:1200px;
+}
 .card{
   background:var(--bg-card);
   border:1px solid var(--border);
   border-radius:10px;
   padding:20px;
-  margin-top:20px;
-  max-width:900px
 }
 .mail-subject{font-size:17px;font-weight:600;margin-bottom:14px}
 .mail-body{font-size:16px;line-height:1.7;white-space:pre-wrap}
 
-/* PAYWALL */
-.paywall{
-  background:var(--bg-card);
-  border:1px dashed var(--border);
-  border-radius:10px;
-  padding:24px;
-  margin-top:20px;
-  max-width:600px
-}
-.paywall h3{margin-top:0}
-.paywall a{
-  display:inline-block;
-  margin-top:12px;
-  padding:10px 16px;
-  background:var(--accent);
-  color:#fff;
-  border-radius:6px;
-  text-decoration:none;
-  font-weight:600
-}
+/* INFO */
+.info-row{margin-bottom:12px}
+.info-label{font-size:12px;color:var(--text-muted)}
+.info-value{font-size:14px;font-weight:500}
 </style>
 </head>
 
@@ -103,7 +90,7 @@ button:hover{opacity:0.9}
 <div class="sidebar">
   <div class="sidebar-header">
     <h3>Historia</h3>
-    <button class="secondary" onclick="toggleTheme()">🌗</button>
+    <button onclick="toggleTheme()">🌗</button>
   </div>
   <div id="history"></div>
 </div>
@@ -133,6 +120,7 @@ button:hover{opacity:0.9}
     style="display:none"></textarea>
 
   <button onclick="analyze()">Analizuj</button>
+  <button id="copyBtn" onclick="copyMail()">Kopiuj odpowiedź</button>
 
   <div id="result"></div>
 </div>
@@ -152,7 +140,7 @@ responseType.onchange=()=>pricingText.style.display=
 /* HELPERS */
 function extract(label,text){
   const m=text.match(new RegExp(label+":([\\s\\S]*?)\\n"));
-  return m?m[1].trim():"";
+  return m?m[1].trim():"—";
 }
 
 /* HISTORY */
@@ -177,23 +165,9 @@ function renderHistory(){
 /* ANALYZE */
 async function analyze(){
   const email=emailInput.value;
-  if(!email){
-    resultDiv.innerHTML="<div class='card'>Brak treści maila.</div>";
-    return;
-  }
-
+  if(!email){resultDiv.innerHTML="<div class='card'>Brak treści maila.</div>";return;}
   const key=new URLSearchParams(window.location.search).get("key");
-  if(!key){
-    resultDiv.innerHTML=`
-      <div class="paywall">
-        <h3>🔒 Dostęp płatny</h3>
-        <p>Aby korzystać z aplikacji, wymagany jest zakup dostępu.</p>
-        <a href="https://potulllm.gumroad.com/l/AIEmailAssistant" target="_blank">
-          Kup dostęp do aplikacji
-        </a>
-      </div>`;
-    return;
-  }
+  if(!key){resultDiv.innerHTML="<div class='card'>Dostęp płatny.</div>";return;}
 
   resultDiv.innerHTML="<div class='card'>Analiza...</div>";
 
@@ -212,23 +186,47 @@ async function analyze(){
 
   history.unshift({
     text:data.result,
-    title:extract("🧠 TYTUŁ SPRAWY",data.result)||"Mail",
-    priority:extract("⚠️ PRIORYTET",data.result)||"normalny",
+    title:extract("🧠 TYTUŁ SPRAWY",data.result),
+    priority:extract("⚠️ PRIORYTET",data.result),
     time:new Date().toLocaleString("pl-PL")
   });
   localStorage.setItem("history",JSON.stringify(history));
   renderHistory();
 }
 
-/* RESULT */
+/* RENDER RESULT */
 function renderResult(text){
   resultDiv.innerHTML=`
+  <div class="result-grid">
+
     <div class="card">
       <div class="mail-subject">${extract("🧠 TYTUŁ SPRAWY",text)}</div>
-      <div class="mail-body">
-        ${extract("✉️ GOTOWA ODPOWIEDŹ DO KLIENTA",text)}
-      </div>
-    </div>`;
+      <div class="mail-body">${extract("✉️ GOTOWA ODPOWIEDŹ DO KLIENTA",text)}</div>
+    </div>
+
+    <div class="card">
+      <div class="info-row"><div class="info-label">Data analizy</div><div class="info-value">${new Date().toLocaleString("pl-PL")}</div></div>
+      <div class="info-row"><div class="info-label">Priorytet</div><div class="info-value">${extract("⚠️ PRIORYTET",text)}</div></div>
+      <div class="info-row"><div class="info-label">Kategoria</div><div class="info-value">${extract("📂 KATEGORIA",text)}</div></div>
+      <div class="info-row"><div class="info-label">Tagi</div><div class="info-value">${extract("🏷️ TAGI",text)}</div></div>
+      <div class="info-row"><div class="info-label">Co klient chce / Sugestia</div><div class="info-value">${extract("📝 UWAGI",text)}</div></div>
+    </div>
+
+  </div>`;
+}
+
+/* COPY */
+function copyMail(){
+  const body=document.querySelector(".mail-body");
+  if(!body)return;
+  navigator.clipboard.writeText(body.innerText);
+  const btn=document.getElementById("copyBtn");
+  btn.textContent="✔ Skopiowano";
+  btn.classList.add("copy-success");
+  setTimeout(()=>{
+    btn.textContent="Kopiuj odpowiedź";
+    btn.classList.remove("copy-success");
+  },2000);
 }
 
 renderHistory();

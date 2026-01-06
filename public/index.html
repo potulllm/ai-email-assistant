@@ -297,20 +297,11 @@ async function analyze(){
 }
 
 function extractBlock(label, text) {
-  const start = text.indexOf(label);
-  if (start === -1) return "—";
-
-  const afterLabel = text.slice(start + label.length);
-  const nextSection = afterLabel.search(/\n[A-Z🧠📂⚠️🏷️✉️📝]/);
-
-  if (nextSection === -1) {
-    return afterLabel.replace(/^:\s*/, "").trim();
-  }
-
-  return afterLabel
-    .slice(0, nextSection)
-    .replace(/^:\s*/, "")
-    .trim();
+  const regex = new RegExp(
+    label + "\\s*:\\s*([\\s\\S]*?)(?=\\n🧠|\\n📂|\\n⚠️|\\n🏷️|\\n✉️|\\n📝|$)"
+  );
+  const match = text.match(regex);
+  return match ? match[1].trim() : "—";
 }
 
 /* RENDER RESULT */

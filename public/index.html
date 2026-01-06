@@ -79,6 +79,20 @@ button.copy-success{background:#16a34a;color:#fff}
 .info-row{margin-bottom:12px}
 .info-label{font-size:12px;color:var(--text-muted)}
 .info-value{font-size:14px;font-weight:500}
+
+.priority-badge{
+  display:inline-block;
+  padding:4px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:600;
+  text-transform:uppercase;
+}
+.priority-wysoki{background:#dc2626;color:#fff}
+.priority-normalny{background:#2563eb;color:#fff}
+.priority-niski{background:#16a34a;color:#fff}
+
+
 </style>
 </head>
 
@@ -102,10 +116,14 @@ button.copy-success{background:#16a34a;color:#fff}
   <textarea id="emailInput" rows="6" placeholder="Wklej maila od klienta..."></textarea>
 
   <select id="responseType">
-    <option value="default">Standardowa</option>
-    <option value="clarify">Doprecyzowanie</option>
-    <option value="pricing">Wycena</option>
-    <option value="decline">Odmowa</option>
+	<select id="quickReply">
+    <option value="">— Szybka odpowiedź —</option>
+	<option value="default">Standardowa</option>
+    <option value="contact">Kontakt wkrótce</option>
+    <option value="clarify">Prośba o doprecyzowanie</option>
+    <option value="pricing">Informacja o wycenie</option>
+	<option value="decline">Odmowa</option>
+</select>
   </select>
 
   <select id="responseStyle">
@@ -126,6 +144,19 @@ button.copy-success{background:#16a34a;color:#fff}
 </div>
 
 </div>
+
+quickReply.onchange = () => {
+  if (quickReply.value === "contact") {
+    emailInput.value += "\n\nProszę o chwilę cierpliwości — wrócimy z informacją.";
+  }
+  if (quickReply.value === "clarify") {
+    emailInput.value += "\n\nCzy mogą Państwo doprecyzować szczegóły zapytania?";
+  }
+  if (quickReply.value === "pricing") {
+    emailInput.value += "\n\nPrzygotujemy orientacyjną wycenę po otrzymaniu szczegółów.";
+  }
+};
+
 
 <script>
 /* THEME */
@@ -152,14 +183,21 @@ const resultDiv=document.getElementById("result");
 
 function renderHistory(){
   historyDiv.innerHTML="";
-  history.forEach(item=>{
+  const order = { wysoki:1, normalny:2, niski:3 };
+
+  [...history]
+   .sort((a,b)=>(order[a.priority]||9)-(order[b.priority]||9))
+   .forEach(item=>{
     const div=document.createElement("div");
     div.className="history-item "+item.priority;
     div.innerHTML=`
       <div class="history-title">${item.title}</div>
       <div class="history-meta">${item.time}</div>
     `;
-    div.onclick=()=>renderResult(item.text);
+    div.onclick = () => {
+      emailInput.value = item.originalEmail || "";
+      renderResult(item.text);
+};
     historyDiv.appendChild(div);
   });
 }
@@ -231,9 +269,11 @@ async function analyze(){
 
   history.unshift({
     text:data.result,
+    originalEmail: email,
     title:extract("🧠 TYTUŁ SPRAWY",data.result),
     priority:extract("⚠️ PRIORYTET",data.result),
     time:new Date().toLocaleString("pl-PL")
+});
   });
   localStorage.setItem("history",JSON.stringify(history));
   renderHistory();

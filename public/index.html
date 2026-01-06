@@ -139,8 +139,10 @@ responseType.onchange=()=>pricingText.style.display=
 
 /* HELPERS */
 function extract(label,text){
-  const m=text.match(new RegExp(label+":([\\s\\S]*?)\\n"));
-  return m?m[1].trim():"—";
+  const regex = new RegExp(label + "\\s*:?\\s*([\\s\\S]*?)(?:\\n\\n|\\n[A-Z🧠📂⚠️🏷️✉️📝]|$)");
+  const match = text.match(regex);
+  return match ? match[1].trim() : "—";
+  
 }
 
 /* HISTORY */
@@ -198,7 +200,21 @@ async function analyze(){
   return;
 }
 
-  resultDiv.innerHTML="<div class='card'>Analiza...</div>";
+  resultDiv.innerHTML = `
+  <div class="result-grid">
+    <div class="card">
+      <div class="mail-subject">Analiza w toku…</div>
+      <div class="mail-body">AI analizuje treść maila i przygotowuje odpowiedź.</div>
+    </div>
+    <div class="card">
+      <div class="info-row"><div class="info-label">Status</div><div class="info-value">⏳ Analiza…</div></div>
+      <div class="info-row"><div class="info-label">Priorytet</div><div class="info-value">—</div></div>
+      <div class="info-row"><div class="info-label">Kategoria</div><div class="info-value">—</div></div>
+      <div class="info-row"><div class="info-label">Tagi</div><div class="info-value">—</div></div>
+      <div class="info-row"><div class="info-label">Sugestia</div><div class="info-value">—</div></div>
+    </div>
+  </div>
+`;
 
   const res=await fetch("/analyze?key="+key,{
     method:"POST",

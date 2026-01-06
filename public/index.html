@@ -154,22 +154,6 @@ function toggleTheme(){
   localStorage.setItem("theme",d?"dark":"light");
 }
 
-document.getElementById("quickReply").onchange = () => {
-  const quickReply = document.getElementById("quickReply");
-  const emailInput = document.getElementById("emailInput");
-
-  if (quickReply.value === "contact") {
-    emailInput.value += "\n\nProszę o chwilę cierpliwości — wrócimy z informacją.";
-  }
-  if (quickReply.value === "clarify") {
-    emailInput.value += "\n\nCzy mogą Państwo doprecyzować szczegóły zapytania?";
-  }
-  if (quickReply.value === "pricing") {
-    emailInput.value += "\n\nPrzygotujemy orientacyjną wycenę po otrzymaniu szczegółów.";
-  }
-
-  quickReply.value = "";
-};
 
 responseType.onchange=()=>pricingText.style.display=
   responseType.value==="pricing"?"block":"none";

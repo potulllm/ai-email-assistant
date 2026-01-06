@@ -254,6 +254,34 @@ async function analyze(){
       pricingText:pricingText.value
     })
   });
+  
+  if (!res.ok) {
+  resultDiv.innerHTML = `
+    <div class="card" style="max-width:600px">
+      <h3>🔒 Dostęp płatny</h3>
+      <p>Ten klucz nie jest aktywny lub nie istnieje.</p>
+      <p>Aby korzystać z aplikacji, wymagany jest zakup dostępu.</p>
+      <a
+        href="https://potulllm.gumroad.com/l/AIEmailAssistant"
+        target="_blank"
+        style="
+          display:inline-block;
+          margin-top:10px;
+          padding:10px 16px;
+          background:var(--accent);
+          color:#fff;
+          border-radius:6px;
+          text-decoration:none;
+          font-weight:600;
+        "
+      >
+        👉 Kup dostęp
+      </a>
+    </div>
+  `;
+  return;
+}
+
   const data=await res.json();
   renderResult(data.result);
 
@@ -325,6 +353,13 @@ function copyMail(){
 
 renderHistory();
 
+function clearHistory(){
+  if(!confirm("Czy na pewno wyczyścić historię?")) return;
+  localStorage.removeItem("history");
+  history.length = 0;
+  renderHistory();
+  resultDiv.innerHTML = "";
+}
 
 
 </script>

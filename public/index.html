@@ -246,7 +246,9 @@ function renderResult(text){
 
     <div class="card">
       <div class="mail-subject">${extract("🧠 TYTUŁ SPRAWY",text)}</div>
-      <div class="mail-body">${extract("✉️ GOTOWA ODPOWIEDŹ DO KLIENTA",text)}</div>
+      <div class="mail-body">
+      ${extractBlock("✉️ GOTOWA ODPOWIEDŹ DO KLIENTA", text)}
+      </div>
     </div>
 
     <div class="card">
@@ -259,6 +261,24 @@ function renderResult(text){
 
   </div>`;
 }
+
+function extractBlock(label, text) {
+  const start = text.indexOf(label);
+  if (start === -1) return "—";
+
+  const afterLabel = text.slice(start + label.length);
+  const nextSection = afterLabel.search(/\n[A-Z🧠📂⚠️🏷️✉️📝]/);
+
+  if (nextSection === -1) {
+    return afterLabel.replace(/^:\s*/, "").trim();
+  }
+
+  return afterLabel
+    .slice(0, nextSection)
+    .replace(/^:\s*/, "")
+    .trim();
+}
+
 
 /* COPY */
 function copyMail(){

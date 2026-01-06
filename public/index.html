@@ -167,7 +167,36 @@ async function analyze(){
   const email=emailInput.value;
   if(!email){resultDiv.innerHTML="<div class='card'>Brak treści maila.</div>";return;}
   const key=new URLSearchParams(window.location.search).get("key");
-  if(!key){resultDiv.innerHTML="<div class='card'>Dostęp płatny.</div>";return;}
+  if(!key){
+  resultDiv.innerHTML = `
+    <div class="card" style="max-width:600px">
+      <h3>🔒 Dostęp płatny</h3>
+      <p>
+        Aby korzystać z aplikacji, wymagany jest zakup dostępu.
+      </p>
+      <p>
+        Po zakupie otrzymasz klucz, który odblokuje analizę maili.
+      </p>
+      <a
+        href="https://potulllm.gumroad.com/l/AIEmailAssistant"
+        target="_blank"
+        style="
+          display:inline-block;
+          margin-top:10px;
+          padding:10px 16px;
+          background:var(--accent);
+          color:#fff;
+          border-radius:6px;
+          text-decoration:none;
+          font-weight:600;
+        "
+      >
+        👉 Kup dostęp do aplikacji
+      </a>
+    </div>
+  `;
+  return;
+}
 
   resultDiv.innerHTML="<div class='card'>Analiza...</div>";
 
